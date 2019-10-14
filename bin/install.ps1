@@ -27,7 +27,7 @@ if ($changeExecutionPolicy) {
     Set-ExecutionPolicy RemoteSigned -scope CurrentUser -Force
 }
 # TODO use custom version to support manifest install/update
-Invoke-WebRequest -useb 'https://get.scoop.sh' | Invoke-Expression
+Invoke-WebRequest -useb 'https://tinyurl.com/scoop-devenv' | Invoke-Expression
 
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
