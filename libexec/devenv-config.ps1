@@ -16,7 +16,7 @@ $opt, $args, $err = getopt $args "" @('apply', 'update', 'remove', 'install', 'l
 $scoopTarget = $env:SCOOP
 
 if ($err) {
-    LogMessage "devenv add-config: $err"; exit 1
+    LogMessage "devenv config: $err"; exit 1
 } elseif ($opt.apply){
     if (!$opt.ContainsKey('name')) {
         Write-Host "devenv config --apply: --name is mandatory"; exit 1
