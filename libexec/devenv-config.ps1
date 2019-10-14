@@ -26,7 +26,7 @@ if ($err) {
 }
 elseif ($opt.list){
      Write-Host "List all devenv configuration by names: "
-     $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name -Recurse
+     $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
       foreach($Folder in $Folders)
       {
          $Folder = Split-Path -Path $Folder -Leaf
