@@ -4,5 +4,5 @@
 
 In PowerShell console execute
 ```
-iwr -useb 'https://tinyurl.com/devenv-install-beta' | iex
+iwr -useb 'https://tinyurl.com/devenv-di' | iex
 ```
