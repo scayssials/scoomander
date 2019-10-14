@@ -8,32 +8,36 @@ $scoopRootDir = scoop prefix scoop
 . "$scoopRootDir\lib\versions.ps1"
 . "$scoopRootDir\lib\install.ps1"
 
-Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath)
+Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [String]$cmd)
 {
     $scoopConf = ConvertFrom-Json $ScoopConfig
 
-    foreach ($bucketSpec in $scoopConf.buckets)
-    {
-        if ($bucketSpec -ne "" -and !($bucketSpec -like "#*"))
+    if ($cmd -eq "install") {
+        foreach ($bucketSpec in $scoopConf.buckets)
         {
-            InstallScoopBuckets $bucketSpec
+            if ($bucketSpec -ne "" -and !($bucketSpec -like "#*"))
+            {
+                InstallScoopBuckets $bucketSpec
+            }
+        }
+        foreach ($appSpec in $scoopConf.apps)
+        {
+            if ($appSpec -ne "" -and !($appSpec -like "#*"))
+            {
+                InstallScoopApps $appSpec $extrasPath
+            }
         }
     }
 
-    foreach ($appSpec in $scoopConf.apps)
+    if ($cmd -eq "update")
     {
-        if ($appSpec -ne "" -and !($appSpec -like "#*"))
+        scoop update
+        foreach ($appSpec in $scoopConf.apps)
         {
-            InstallScoopApps $appSpec $extrasPath
-        }
-    }
-
-    scoop update
-    foreach ($appSpec in $scoopConf.apps)
-    {
-        if ($appSpec -ne "" -and !($appSpec -like "#*"))
-        {
-            UpdateScoopApps $appSpec $extrasPath
+            if ($appSpec -ne "" -and !($appSpec -like "#*"))
+            {
+                UpdateScoopApps $appSpec $extrasPath
+            }
         }
     }
 }
@@ -170,7 +174,12 @@ function m_AddBucketName($appName, $appBucket)
 {
     $appdir = appdir $appName/current
     $install_json = Get-Content $appdir/install.json -raw -Encoding UTF8 | convertfrom-json -ea stop
-    $install_json | Add-Member -Type NoteProperty -Name 'bucket' -Value $appBucket
+    if (Get-Member -inputobject $install_json -name "Property" -Membertype Properties)
+    {
+        $install_json | Set-ItemProperty -Name 'bucket' -Value $appBucket
+    } else {
+        $install_json | Add-Member -Type NoteProperty -Name 'bucket' -Value $appBucket
+    }
     $install_json | ConvertTo-Json | Set-Content $appdir/install.json
 }
 

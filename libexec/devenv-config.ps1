@@ -4,13 +4,14 @@
 # devenv config --install --url <git-url> --name <config-name>
 # devenv config --remove --name <config-name>
 # devenv config --apply --name <config-name>
+# devenv config --update --name <config-name>
 # devenv config --list
 
 ## todo check if the config repo is good
 
 . "$( scoop prefix scoop )\lib\getopt.ps1"
 
-$opt, $args, $err = getopt $args "" @('apply', 'remove', 'install', 'list', 'url=', 'name=', 'branch=')
+$opt, $args, $err = getopt $args "" @('apply', 'update', 'remove', 'install', 'list', 'url=', 'name=', 'branch=')
 
 $scoopTarget = $env:SCOOP
 
@@ -22,7 +23,16 @@ if ($err) {
     }
      #load API
      . "$PSScriptRoot\..\API\configAPI.ps1"
-     . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1"
+     . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "install"
+}
+elseif ($opt.update) {
+    if (!$opt.ContainsKey('name'))
+    {
+        Write-Host "devenv config --update: --name is mandatory"; exit 1
+    }
+    #load API
+    . "$PSScriptRoot\..\API\configAPI.ps1"
+    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "update"
 }
 elseif ($opt.list){
      Write-Host "List all devenv configuration by names: "
