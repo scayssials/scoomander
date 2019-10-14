@@ -29,6 +29,7 @@ if ($changeExecutionPolicy) {
 # TODO use custom version to support manifest install/update
 Invoke-WebRequest -useb 'https://tinyurl.com/scoop-devenv' | Invoke-Expression
 
+scoop install git
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
 
