@@ -170,39 +170,20 @@ function post_install($manifest, $extra_dir)
     $manifest.post_install += 'extra_post_install $extra_dir $dir $original_dir $persist_dir $version $app $architecture'
 }
 
-function m_AddBucketName($appName, $appBucket)
-{
-    $appdir = appdir $appName/current
-    $install_json = Get-Content $appdir/install.json -raw -Encoding UTF8 | convertfrom-json -ea stop
-    if (Get-Member -inputobject $install_json -name "Property" -Membertype Properties)
-    {
-        $install_json | Set-ItemProperty -Name 'bucket' -Value $appBucket
-    } else {
-        $install_json | Add-Member -Type NoteProperty -Name 'bucket' -Value $appBucket
-    }
-    $install_json | ConvertTo-Json | Set-Content $appdir/install.json
-}
-
 function m_installApp($extrasPath, $appName, $appBucket)
 {
+    # First install the app
+    scoop install $appName
+
+    # Then post configure it
     $extra_dir = "$extrasPath/$appName/"
-    Import-Module $extrasPath/$appName/extra.psm1
-    # add pre and post operation directly in the manifest
-    $manifest = manifest $appName $appBucket
-    pre_install $manifest $extra_dir
-    post_install $manifest $extra_dir
-
-    $persistDir = persistdir "devenv"
-    $manifest_path = "$persistDir\manifest\$appName.json"
-    New-Item $manifest_path -ItemType "file" -Force
-    $manifest | ConvertTo-Json | Set-Content $manifest_path -Force
-
-    # use the created manifest to install the app
-    scoop install $manifest_path
-
-    m_AddBucketName $appName $appBucket
-
-    Remove-Module extra
+    if (Test-Path -LiteralPath "$extra_dir/extra.psm1")
+    {
+        Import-Module $extra_dir/extra.psm1
+        $appdir = appdir $appName/current
+        apply $extra_dir $appdir
+        Remove-Module extra
+    }
 }
 
 function m_updateApp($extrasPath, $appName, $appBucket)
