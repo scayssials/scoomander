@@ -21,13 +21,6 @@ Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [Stri
                 InstallScoopBuckets $bucketSpec
             }
         }
-        foreach ($appSpec in $scoopConf.apps)
-        {
-            if ($appSpec -ne "" -and !($appSpec -like "#*"))
-            {
-                InstallScoopApps $appSpec $extrasPath
-            }
-        }
         foreach ($appSpec in $scoopConf.extras)
         {
             if ($appSpec -ne "" -and !($appSpec -like "#*"))
@@ -37,6 +30,13 @@ Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [Stri
                     $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
                     m_applyExtras $extrasPath $appName
                 }
+            }
+        }
+        foreach ($appSpec in $scoopConf.apps)
+        {
+            if ($appSpec -ne "" -and !($appSpec -like "#*"))
+            {
+                InstallScoopApps $appSpec $extrasPath
             }
         }
     }
