@@ -197,7 +197,8 @@ function m_applyExtras($extrasPath, $appName)
         LogMessage "Applying '$appName' extras from '$extrasPath'"
         Import-Module $extra_dir/extra.psm1
         $appdir = appdir $appName/current
-        apply $extra_dir $appdir
+        $persist_dir = persistdir $appName
+        apply $extra_dir $appdir $persist_dir
         Remove-Module extra
         LogInfo "-> '$appName' extras was applyed"
     }
