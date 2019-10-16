@@ -27,6 +27,17 @@ Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [Stri
                 InstallScoopApps $appSpec $extrasPath
             }
         }
+        foreach ($appSpec in $scoopConf.extras)
+        {
+            if ($appSpec -ne "" -and !($appSpec -like "#*"))
+            {
+                if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?')
+                {
+                    $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
+                    m_applyExtras $extrasPath $appName
+                }
+            }
+        }
     }
 
     if ($cmd -eq "update")
@@ -99,7 +110,7 @@ Function InstallScoopApps($appSpec, [String]$extrasPath)
                 # check configuration file
                 if (Test-Path -path $extrasPath/$appName/extra.psm1)
                 {
-                    m_installApp $extrasPath $appName $appBucket
+                    m_installApp $extrasPath $appName
                 }
                 else
                 {
@@ -107,6 +118,7 @@ Function InstallScoopApps($appSpec, [String]$extrasPath)
                 }
             }
         }
+        m_applyExtras $extrasPath $appName
     }
     else
     {
@@ -174,11 +186,13 @@ function m_installApp($extrasPath, $appName, $appBucket)
 {
     # First install the app
     scoop install $appName
+}
 
-    # Then post configure it
-    $extra_dir = "$extrasPath/$appName/"
-    if (Test-Path -LiteralPath "$extra_dir/extra.psm1")
+function m_applyExtras($extrasPath, $appName) {
+    $extra_dir = "$extrasPath\$appName"
+    if (Test-Path -LiteralPath "$extra_dir\extra.psm1")
     {
+        LogInfo "Applying '$appName' extras from '$extrasPath'"
         Import-Module $extra_dir/extra.psm1
         $appdir = appdir $appName/current
         apply $extra_dir $appdir
