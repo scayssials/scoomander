@@ -12,7 +12,8 @@ Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [Stri
 {
     $scoopConf = ConvertFrom-Json $ScoopConfig
 
-    if ($cmd -eq "install") {
+    if ($cmd -eq "install")
+    {
         foreach ($bucketSpec in $scoopConf.buckets)
         {
             if ($bucketSpec -ne "" -and !($bucketSpec -like "#*"))
@@ -90,7 +91,7 @@ Function InstallScoopApps($appSpec, [String]$extrasPath)
         }
         if (installed $appName)
         {
-            LogInfo "Scoop app '$( $appName )' is already installed"
+            LogMessage "Scoop app '$( $appName )' is already installed"
 
             $ver = current_version $appName $false
             $install_info = install_info $appName $ver $false
@@ -142,7 +143,7 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath)
             $version = latest_version $appName $appBucket
             if ($old_version -eq $version)
             {
-                LogInfo "The latest version of '$appName' ($version) is already installed."
+                LogMessage "The latest version of '$appName' ($version) is already installed."
             }
             else
             {
@@ -188,15 +189,17 @@ function m_installApp($extrasPath, $appName, $appBucket)
     scoop install $appName
 }
 
-function m_applyExtras($extrasPath, $appName) {
+function m_applyExtras($extrasPath, $appName)
+{
     $extra_dir = "$extrasPath\$appName"
     if (Test-Path -LiteralPath "$extra_dir\extra.psm1")
     {
-        LogInfo "Applying '$appName' extras from '$extrasPath'"
+        LogMessage "Applying '$appName' extras from '$extrasPath'"
         Import-Module $extra_dir/extra.psm1
         $appdir = appdir $appName/current
         apply $extra_dir $appdir
         Remove-Module extra
+        LogInfo "-> '$appName' extras was applyed"
     }
 }
 
