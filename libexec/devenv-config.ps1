@@ -69,7 +69,7 @@ elseif ($opt.list){
     } elseif (!$opt.ContainsKey('name')) {
         Write-Host "devenv config --install: --name is mandatory"; exit 1
     }
-    Write-Host "Installing a configuration from repo: " + $opt.url + " as " + $opt.name + " configuration."
+    Write-Host "Installing a configuration from repo '$opt.url' as '$opt.name' configuration."
     Write-Host ""
 
     if (Test-Path -LiteralPath "$scoopTarget\persist\devenv\config\$( $opt.name )") {
@@ -88,11 +88,12 @@ elseif ($opt.list){
 
     Write-Host ""
     git clone $opt.url "$scoopTarget\persist\devenv\config\$( $opt.name )"
+    Push-Location "$scoopTarget\persist\devenv\config\$( $opt.name )"
     if ($opt.ContainsKey('branch')) {
-        Push-Location "$scoopTarget\persist\devenv\config\$( $opt.name )"
         git checkout "$scoopPersistBranch"
-        Pop-Location
     }
+    git lfs pull
+    Pop-Location
 } else {
     . "$PSScriptRoot\..\libexec\devenv-help.ps1" $cmd
 }
