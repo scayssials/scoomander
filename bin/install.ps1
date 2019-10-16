@@ -34,7 +34,7 @@ scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
 
 # Install di-conf by default
-devenv config --install --url https://github.com/stephanec1/DI-conf.git --name di-conf
+devenv config --install --url https://git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-conf --name di-conf
 
 Write-Host ""
 Write-Host "Scoop bootstrapped."
