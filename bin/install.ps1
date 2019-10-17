@@ -27,7 +27,7 @@ if ($changeExecutionPolicy) {
     Set-ExecutionPolicy RemoteSigned -scope CurrentUser -Force
 }
 # TODO use custom version to support manifest install/update
-Invoke-WebRequest -useb 'https://raw.githubusercontent.com/stephanec1/devenv/master/bin/install.ps1' | Invoke-Expression
+Invoke-WebRequest -useb 'https://raw.githubusercontent.com/stephanec1/scoop//master/bin/install.ps1' | Invoke-Expression
 
 scoop install git
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
