@@ -120,14 +120,12 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath)
     if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?')
     {
         $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-        if (!$appBucket)
-        {
-            $appBucket = "main"
-        }
         if (installed $appName)
         {
             # check configuration file
             $old_version = current_version $appName $false
+            $install = install_info $appName $old_version
+            $appBucket = $install.bucket
             $version = latest_version $appName $appBucket
             if ($old_version -eq $version)
             {
@@ -135,7 +133,7 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath)
             }
             else
             {
-                LogInfo "New version of '$appName' detected... -> $appSpec"
+                LogInfo "New version of '$appName' detected..."
                 scoop update $appSpec
                 if (Test-Path -path $extrasPath/$appName/extra.psm1) {
                     m_applyExtras $extrasPath $appName
