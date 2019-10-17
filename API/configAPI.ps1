@@ -8,14 +8,32 @@ $scoopRootDir = scoop prefix scoop
 . "$scoopRootDir\lib\versions.ps1"
 . "$scoopRootDir\lib\install.ps1"
 
-Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [String]$cmd)
+Function ApplyConfigurationFile([String]$configPath, [String]$cmd, [Bool]$force)
 {
-    $scoopConf = ConvertFrom-Json $ScoopConfig
+    $extrasPath = "$PSScriptRoot\extras"
 
     if ($cmd -eq "update")
     {
+        # Rebase
+        LogInfo "Rebasing configuration..."
+        Push-Location $configPath
+        git fetch origin
+        if ($force)
+        {
+            git rebase -Xours origin/master
+        }
+        else
+        {
+            git rebase origin/master
+        }
+        git lfs pull
+        Pop-Location
+
         scoop update
     }
+
+    $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
+
     foreach ($bucketSpec in $scoopConf.buckets)
     {
         if ($bucketSpec -ne "" -and !($bucketSpec -like "#*"))

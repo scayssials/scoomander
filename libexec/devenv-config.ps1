@@ -5,13 +5,14 @@
 # devenv config --remove --name <config-name>
 # devenv config --apply --name <config-name>
 # devenv config --update --name <config-name>
+# devenv config --update --name <config-name> [--force]
 # devenv config --list
 
 ## todo check if the config repo is good
 
 . "$( scoop prefix scoop )\lib\getopt.ps1"
 
-$opt, $args, $err = getopt $args "" @('apply', 'update', 'remove', 'install', 'list', 'url=', 'name=', 'branch=')
+$opt, $args, $err = getopt $args "" @('apply', 'update', 'remove', 'install', 'list', 'force', 'url=', 'name=', 'branch=')
 
 $scoopTarget = $env:SCOOP
 
@@ -27,7 +28,7 @@ elseif ($opt.apply)
     }
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1"
-    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "install"
+    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "install" $false
 }
 elseif ($opt.update)
 {
@@ -37,7 +38,7 @@ elseif ($opt.update)
     }
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1"
-    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "update"
+    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "update" $( $opt.force )
 }
 elseif ($opt.list)
 {
