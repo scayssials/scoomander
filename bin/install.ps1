@@ -30,9 +30,9 @@ if ($changeExecutionPolicy) {
 Invoke-WebRequest -useb 'https://tinyurl.com/scoop-devenv' | Invoke-Expression
 
 scoop install git
-Add-Content "$( scoop prefix git )/mingw64/ssl/certs/ca-bundle.crt" -Value (Get-Content -Path "$( scoop prefix devenv )/certs/axway.int.crt")
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
+Add-Content "$( scoop prefix git )/mingw64/ssl/certs/ca-bundle.crt" -Value (Get-Content -Path "$( scoop prefix devenv )/certs/axway.int.crt")
 
 # Install di-conf by default
 devenv config --install --url https://git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-configuration.git --name di-conf
