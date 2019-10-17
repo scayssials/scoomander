@@ -30,6 +30,7 @@ if ($changeExecutionPolicy) {
 Invoke-WebRequest -useb 'https://tinyurl.com/scoop-devenv' | Invoke-Expression
 
 scoop install git
+Add-Content "$( scoop prefix git )/mingw64/ssl/certs/ca-bundle.crt" -Value (Get-Content -Path $PSScriptRoot/axway.int.crt)
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
 
