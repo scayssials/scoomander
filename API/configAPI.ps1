@@ -17,6 +17,7 @@ Function ApplyConfigurationFile([String]$configPath, [String]$cmd, [Bool]$force)
         # Rebase
         LogInfo "Rebasing configuration..."
         Push-Location $configPath
+        git commit -a -m "Snapshot of the configuration"
         git fetch origin
         if ($force)
         {
