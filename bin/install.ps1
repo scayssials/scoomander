@@ -42,7 +42,7 @@ Add-Content "$( scoop prefix git )/mingw64/ssl/certs/ca-bundle.crt" -Value (Get-
 
 # Install di-conf by default
 $username = Read-Host -Prompt 'Prompt your axway Username to get the devenv configuration'
-devenv config --install --url https://$username@git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-configuration.git --name di-conf
+devenv config --install --url https://$username@git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-configuration.git --name di-conf --branch current
 
 Write-Host ""
 Write-Host "Scoop bootstrapped."

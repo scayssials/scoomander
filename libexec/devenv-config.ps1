@@ -90,7 +90,12 @@ elseif ($opt.list){
     git clone $opt.url "$scoopTarget\persist\devenv\config\$( $opt.name )"
     Push-Location "$scoopTarget\persist\devenv\config\$( $opt.name )"
     if ($opt.ContainsKey('branch')) {
-        git checkout "$scoopPersistBranch"
+        $exist = git show-ref refs/heads/$opt.branch
+        if (!$exist) {
+            git checkout $opt.branch
+        } else {
+            git checkout -b $opt.branch
+        }
     }
     git lfs pull
     Pop-Location
