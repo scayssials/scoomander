@@ -27,7 +27,7 @@ Function ApplyConfigurationFile([String]$configPath, [String]$cmd, $force)
         else
         {
             git rebase origin/master
-            Write-Host "Do you want to proceed with the Devenv installation ?"
+            Write-Host "Is your configuration rebased ?"
 
             $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
