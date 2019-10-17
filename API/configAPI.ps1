@@ -8,7 +8,7 @@ $scoopRootDir = scoop prefix scoop
 . "$scoopRootDir\lib\versions.ps1"
 . "$scoopRootDir\lib\install.ps1"
 
-Function ApplyConfigurationFile([String]$configPath, [String]$cmd, [Bool]$force)
+Function ApplyConfigurationFile([String]$configPath, [String]$cmd, $force)
 {
     $extrasPath = "$configPath\extras"
 
