@@ -27,6 +27,17 @@ Function ApplyConfigurationFile([String]$configPath, [String]$cmd, $force)
         else
         {
             git rebase origin/master
+            Write-Host "Do you want to proceed with the Devenv installation ?"
+
+            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
+
+            $decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
+            if ($decision -ne 0) {
+                Write-Host 'Cancelled'
+                return
+            }
         }
         git lfs pull
         Pop-Location
