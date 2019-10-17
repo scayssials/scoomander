@@ -10,7 +10,7 @@ $scoopRootDir = scoop prefix scoop
 
 Function ApplyConfigurationFile([String]$configPath, [String]$cmd, [Bool]$force)
 {
-    $extrasPath = "$PSScriptRoot\extras"
+    $extrasPath = "$configPath\extras"
 
     if ($cmd -eq "update")
     {
@@ -153,7 +153,8 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath)
             {
                 LogInfo "New version of '$appName' detected..."
                 scoop update $appSpec
-                if (Test-Path -path $extrasPath/$appName/extra.psm1) {
+                if (Test-Path -path $extrasPath/$appName/extra.psm1)
+                {
                     m_applyExtras $extrasPath $appName
                 }
             }
