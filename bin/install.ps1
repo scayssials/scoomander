@@ -1,5 +1,11 @@
-$scoopTarget = 'C:\devenv\scoop'
+$defaultScoopTarget = 'C:\devenv\scoop'
 $changeExecutionPolicy = (Get-ExecutionPolicy) -gt 'RemoteSigned' -or (Get-ExecutionPolicy) -eq 'ByPass'
+
+$scoopTarget = Read-Host -Prompt "Where do you want to install your devenv? [$defaultScoopTarget]"
+if ([string]::IsNullOrWhiteSpace($scoopTarget))
+{
+   $scoopTarget = $defaultScoopTarget
+}
 
 Write-Host "Scoop will be installed to $scoopTarget"
 if ($changeExecutionPolicy) {
