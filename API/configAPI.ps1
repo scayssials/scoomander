@@ -12,43 +12,39 @@ Function ApplyConfigurationFile([String]$ScoopConfig, [String]$extrasPath, [Stri
 {
     $scoopConf = ConvertFrom-Json $ScoopConfig
 
-    if ($cmd -eq "install")
-    {
-        foreach ($bucketSpec in $scoopConf.buckets)
-        {
-            if ($bucketSpec -ne "" -and !($bucketSpec -like "#*"))
-            {
-                InstallScoopBuckets $bucketSpec
-            }
-        }
-        foreach ($appSpec in $scoopConf.extras)
-        {
-            if ($appSpec -ne "" -and !($appSpec -like "#*"))
-            {
-                if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?')
-                {
-                    $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                    m_applyExtras $extrasPath $appName
-                }
-            }
-        }
-        foreach ($appSpec in $scoopConf.apps)
-        {
-            if ($appSpec -ne "" -and !($appSpec -like "#*"))
-            {
-                InstallScoopApps $appSpec $extrasPath
-            }
-        }
-    }
-
     if ($cmd -eq "update")
     {
         scoop update
-        foreach ($appSpec in $scoopConf.apps)
+    }
+    foreach ($bucketSpec in $scoopConf.buckets)
+    {
+        if ($bucketSpec -ne "" -and !($bucketSpec -like "#*"))
         {
-            if ($appSpec -ne "" -and !($appSpec -like "#*"))
+            InstallScoopBuckets $bucketSpec
+        }
+    }
+    foreach ($appSpec in $scoopConf.extras)
+    {
+        if ($appSpec -ne "" -and !($appSpec -like "#*"))
+        {
+            if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?')
+            {
+                $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
+                m_applyExtras $extrasPath $appName
+            }
+        }
+    }
+    foreach ($appSpec in $scoopConf.apps)
+    {
+        if ($appSpec -ne "" -and !($appSpec -like "#*"))
+        {
+            if ($cmd -eq "update")
             {
                 UpdateScoopApps $appSpec $extrasPath
+            }
+            else
+            {
+                InstallScoopApps $appSpec $extrasPath
             }
         }
     }
@@ -64,7 +60,7 @@ Function InstallScoopBuckets($bucketSpec)
         $dir = Find-BucketDirectory $bucketName -Root
         if (Test-Path -LiteralPath $dir)
         {
-            LogInfo "Scoop bucket '$bucketName' already exists"
+            LogMessage "Scoop bucket '$bucketName' already installed"
         }
         else
         {
@@ -108,15 +104,7 @@ Function InstallScoopApps($appSpec, [String]$extrasPath)
         else
         {
             ExecuteScript "Install scoop app '$appSpec'" {
-                # check configuration file
-                if (Test-Path -path $extrasPath/$appName/extra.psm1)
-                {
-                    m_installApp $extrasPath $appName
-                }
-                else
-                {
-                    scoop install $appSpec
-                }
+                scoop install $appSpec
             }
         }
         m_applyExtras $extrasPath $appName
@@ -147,46 +135,23 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath)
             }
             else
             {
-                if (Test-Path -path $extrasPath/$appName/extra.psm1)
-                {
-                    m_updateApp $extrasPath $appName $appBucket
-                }
-                else
-                {
-                    scoop update $appBucket/$appSpec
+                LogInfo "New version of '$appName' detected... -> $appSpec"
+                scoop update $appSpec
+                if (Test-Path -path $extrasPath/$appName/extra.psm1) {
+                    m_applyExtras $extrasPath $appName
                 }
             }
-
+        }
+        else
+        {
+            LogMessage "New scoop app detected '$( $appName )'..."
+            InstallScoopApps $appSpec $extrasPath
         }
     }
     else
     {
         LogWarn "Invalid application : $appSpec"
     }
-}
-
-function pre_install($manifest, $extra_dir)
-{
-    if (!$manifest.pre_install)
-    {
-        $manifest | Add-Member -Type NoteProperty -Name 'pre_install' -Value @()
-    }
-    $manifest.pre_install += 'extra_pre_install $extra_dir $dir $original_dir $persist_dir $version $app $architecture'
-}
-
-function post_install($manifest, $extra_dir)
-{
-    if (!$manifest.post_install)
-    {
-        $manifest | Add-Member -Type NoteProperty -Name 'post_install' -Value @()
-    }
-    $manifest.post_install += 'extra_post_install $extra_dir $dir $original_dir $persist_dir $version $app $architecture'
-}
-
-function m_installApp($extrasPath, $appName, $appBucket)
-{
-    # First install the app
-    scoop install $appName
 }
 
 function m_applyExtras($extrasPath, $appName)
@@ -200,28 +165,6 @@ function m_applyExtras($extrasPath, $appName)
         $persist_dir = persistdir $appName
         apply $extra_dir $appdir $persist_dir
         Remove-Module extra
-        LogInfo "-> '$appName' extras was applyed"
+        LogInfo "-> '$appName' extras was applied"
     }
-}
-
-function m_updateApp($extrasPath, $appName, $appBucket)
-{
-    $extra_dir = "$extrasPath/$appName/"
-    Import-Module $extrasPath/$appName/extra.psm1
-    # add pre and post operation directly in the manifest
-    $manifest = manifest $appName $appBucket
-    pre_install $manifest $extra_dir
-    post_install $manifest $extra_dir
-
-    $persistDir = persistdir "devenv"
-    $manifest_path = "$persistDir\manifest\$appName.json"
-    New-Item $manifest_path -ItemType "file" -Force
-    $manifest | ConvertTo-Json | Set-Content $manifest_path -Force
-
-    # use the created manifest to install the app
-    scoop update $appName
-
-    m_AddBucketName $appName $appBucket
-
-    Remove-Module extra
 }
