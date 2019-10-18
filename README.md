@@ -58,3 +58,9 @@ configuration example:
 ```
 this will install a scoop bucket from github
 install the list of apps and apply configurations extras
+
+### Uninstall
+Just run 
+```
+devenv uninstall
+```
