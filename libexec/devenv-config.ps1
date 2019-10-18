@@ -88,7 +88,7 @@ elseif ($opt.install)
     {
         Write-Host "devenv config --install: --name is mandatory"; exit 1
     }
-    Write-Host "Installing a configuration from repo '$opt.url' as '$opt.name' configuration."
+    Write-Host "Installing a configuration from repo '$($opt.url)' as '$($opt.name)' configuration."
     Write-Host ""
 
     if (Test-Path -LiteralPath "$scoopTarget\persist\devenv\config\$( $opt.name )")
