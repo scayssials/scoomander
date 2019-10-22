@@ -35,9 +35,10 @@ if ($changeExecutionPolicy) {
 iwr -useb get.scoop.sh | iex
 
 scoop install git
+Write-Host ""
 Write-Host "Bootstrap git"
 Write-Host ""
-$username = Read-Host -Prompt 'Prompt your axway Username for git.'
+$username = Read-Host -Prompt 'Prompt your AXWAY Username for git.'
 git config --global user.name $username
 git config --system --replace-all filter.lfs.process 'git-lfs filter-process'
 

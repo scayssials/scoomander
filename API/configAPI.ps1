@@ -57,6 +57,7 @@ Function ApplyConfigurationFile([String]$configPath) {
     foreach ($appSpec in $scoopConf.apps) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
+                $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
                 m_applyExtras $extrasPath $appName
             }
         }
