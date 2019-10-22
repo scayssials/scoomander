@@ -39,6 +39,7 @@ Write-Host "Bootstrap git"
 Write-Host ""
 $username = Read-Host -Prompt 'Prompt your axway Username for git.'
 git config --global user.name $username
+git config --system --replace-all filter.lfs.process 'git-lfs filter-process'
 
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
