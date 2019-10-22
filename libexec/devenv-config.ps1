@@ -105,11 +105,9 @@ Switch ($action) {
         # Clone configuration and checkout to the specified branch
         git clone $url "$scoopTarget\persist\devenv\config\$name"
         Push-Location "$scoopTarget\persist\devenv\config\$name"
-        if ($branch) {
-            $exist = git rev-parse --verify --quiet $branch
-            if (!$exist) { git checkout -b $branch }
-            else { git checkout $branch }
-        }
+        $exist = git rev-parse --verify --quiet $branch
+        if (!$exist) { git checkout -b $branch }
+        else { git checkout $branch }
         Pop-Location
         LogInfo "New configuration '$name' was added. "
         LogMessage ""
