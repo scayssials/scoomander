@@ -36,7 +36,7 @@ iwr -useb get.scoop.sh | iex
 
 scoop install git
 Write-Host "Bootstrap git"
-Writ-Host ""
+Write-Host ""
 $username = Read-Host -Prompt 'Prompt your axway Username for git.'
 git config --global user.name $username
 
