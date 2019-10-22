@@ -46,7 +46,7 @@ scoop install devenv/devenv
 Add-Content "$( scoop prefix git )/mingw64/ssl/certs/ca-bundle.crt" -Value (Get-Content -Path "$( scoop prefix devenv )/certs/axway.int.crt")
 
 # Install di-conf by default
-devenv config --install --url https://git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-configuration.git --name di-conf
+devenv config add di-conf https://git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-configuration.git
 
 Write-Host ""
 Write-Host "Scoop bootstrapped."
