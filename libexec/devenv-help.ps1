@@ -8,7 +8,7 @@ function print_help($cmd) {
     $file = Get-Content (command_path $cmd) -raw
 
     $usage = usage $file
-    $help = help $file
+    $help = scoop_help $file
 
     if ($usage) {
         "$usage`n"
