@@ -110,8 +110,6 @@ Switch ($action) {
             if (!$exist) { git checkout -b $branch }
             else { git checkout $branch }
         }
-        # Usefull if lfs is not configured to automatically checkout pointed files
-        git lfs pull
         Pop-Location
         LogInfo "New configuration '$name' was added. "
         LogMessage ""
@@ -166,7 +164,6 @@ Switch ($action) {
         }
         else {
             git rebase origin/master
-            git lfs pull
             $decision = takeDecision "Is your configuration rebased ?"
             if ($decision -ne 0) {
                 LogWarn 'Trying to reset configuration to previous snapshot.'
