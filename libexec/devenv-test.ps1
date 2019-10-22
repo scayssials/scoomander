@@ -78,7 +78,30 @@ Switch ($action) {
         ; Break
     }
     "remove" {
-        Write-Host "Usage: devenv config remove <name> [-force]"
+        if (!$name) {
+            LogWarn "name is mandatory."
+            LogMessage ""
+            LogMessage "Usage: devenv config remove  [-name <String>] [-force]"
+            LogMessage ""
+            return
+        }
+        LogMessage "Adding configuration '$name' from repo '$url'."
+        # Ask for override if the configuration already exist
+        if (Test-Path -LiteralPath "$scoopTarget\persist\devenv\config\$name") {
+            if (!$force) {
+                LogMessage ""
+                $decision = takeDecision "Do you really want to remove the configuration '$name'? Be sure to unapply it before delete it."
+                if (!$decision) {
+                    LogWarn 'Cancelled'
+                    return
+                }
+            }
+            Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+            LogInfo "Configuration '$name' was removed."
+        } else {
+            LogWarn "Configuration '$name' do not exist. Use devenv config list to see existing configurations."
+            return
+        }
         ; Break
     }
     "update" {
