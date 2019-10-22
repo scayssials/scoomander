@@ -1,132 +1,201 @@
 # Usage: devenv config [options]
-# Summary: Devenv configuration management
+# Summary: Devenv configuration Management
 # Help:
-# devenv config --install --url <git-url> --name <config-name>
-# devenv config --remove --name <config-name>
-# devenv config --apply --name <config-name>
-# devenv config --update --name <config-name>
-# devenv config --update --name <config-name> [--force]
-# devenv config --list
+# devenv config add [-name <String>]* [-url <String>]* [-branch <String>] [-force]
+# devenv config remove [-name <String>]* [-force]
+# devenv config update [-name <String>]* [-force]
+# devenv config apply [-name <String>]*
+# devenv config unapply [-name <String>]*
+# devenv config list
 
-## todo check if the config repo is good
+Param(
+    [String]
+    $action,
+    [String]
+    $name,
+    [String]
+    $url,
+    [String]
+    $branch="current",
+    [Switch]
+    $force
+)
 
-. "$( scoop prefix scoop )\lib\getopt.ps1"
+# Import usefull scripts
+. "$PSScriptRoot\..\lib\logger.ps1"
 
-$opt, $args, $err = getopt $args "" @('apply', 'update', 'remove', 'install', 'list', 'force', 'url=', 'name=', 'branch=')
-
+# Set global variables
 $scoopTarget = $env:SCOOP
 
-if ($err)
-{
-    LogMessage "devenv config: $err"; exit 1
+Function TakeDecision([String]$question, [String]$cancelMessage) {
+    LogMessage ""
+    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
+    return $Host.UI.PromptForChoice($message, $question, $choices, 1)
 }
-elseif ($opt.apply)
-{
-    if (!$opt.ContainsKey('name'))
-    {
-        Write-Host "devenv config --apply: --name is mandatory"; exit 1
+
+Function GetConfigPath([String]$configName) {
+    return "$scoopTarget\persist\devenv\config\$configName"
+}
+
+Function IsConfigInstalled([String]$configName) {
+    return Test-Path -LiteralPath $( GetConfigPath $configName )
+}
+
+Function EnsureConfigInstalled([String]$configName) {
+    if (-Not (IsConfigInstalled $configName)) {
+        LogWarn "The configuration '$configName' do not exist."
+        devenv test list
+        exit 1
     }
+}
+
+Function m_apply([String]$configName) {
+    if (!$configName) {
+        LogWarn "name is mandatory."
+        LogMessage ""
+        LogMessage "Usage: devenv config apply <name>"
+        LogMessage ""
+        return
+    }
+    EnsureConfigInstalled $configName
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1"
-    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "install" $false
+    . "$PSScriptRoot\..\config\$configName\main.ps1" "apply"
 }
-elseif ($opt.update)
-{
-    if (!$opt.ContainsKey('name'))
-    {
-        Write-Host "devenv config --update: --name is mandatory"; exit 1
+
+Function m_unapply([String]$configName) {
+    if (!$configName) {
+        LogWarn "name is mandatory."
+        LogMessage ""
+        LogMessage "Usage: devenv config unapply <name>"
+        LogMessage ""
+        return
     }
+    EnsureConfigInstalled $configName
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1"
-    . "$PSScriptRoot\..\config\$( $opt.name )\apply.ps1" "update" $( $opt.force )
+    . "$PSScriptRoot\..\config\$configName\main.ps1" "unapply"
 }
-elseif ($opt.list)
-{
-    Write-Host "List all devenv configuration by names: "
-    $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
-    foreach ($Folder in $Folders)
-    {
-        $Folder = Split-Path -Path $Folder -Leaf
-        Write-Host $Folder
-    }
-}
-elseif ($opt['remove'])
-{
-    if (!$opt.ContainsKey('name'))
-    {
-        Write-Host "devenv config --remove: --name is mandatory"; exit 1
-    }
-    if (Test-Path -LiteralPath "$scoopTarget\persist\devenv\config\$( $opt.name )")
-    {
-        Write-Host "Removing configuration '$( $opt.name )'"
-        Write-Host ""
-        Write-Host "Are you sure to delete configuration $( $opt.name ) ?"
-        $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
 
-        $decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
-        if ($decision -ne 0)
-        {
-            Write-Host 'Cancelled'
+Switch ($action) {
+    "add" {
+        if (!$name -or !$url) {
+            LogWarn "name and url are mandatory."
+            LogMessage ""
+            LogMessage "Usage: devenv config add [-name <String>] [-url <String>] [-branch <String>] [-force]"
+            LogMessage ""
             return
         }
-        Remove-Item "$scoopTarget\persist\devenv\config\$( $opt.name )" -Force -Recurse
+        LogMessage "Adding configuration '$name' from repo '$url'."
+        # Ask for override if the configuration already exist
+        if (IsConfigInstalled $name) {
+            if (!$force) {
+                LogMessage ""
+                $decision = takeDecision "A configuration named '$name' already exist, would you like to override it ?"
+                if ($decision -ne 0) {
+                    LogWarn 'Cancelled'
+                    return
+                }
+            }
+            Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+            LogInfo "Old configuration '$name' was erased."
+        }
+        # Clone configuration and checkout to the specified branch
+        git clone $url "$scoopTarget\persist\devenv\config\$name"
+        Push-Location "$scoopTarget\persist\devenv\config\$name"
+        if ($branch) {
+            $exist = git rev-parse --verify --quiet $branch
+            if (!$exist) { git checkout -b $branch }
+            else { git checkout $branch }
+        }
+        # Usefull if lfs is not configured to automatically checkout pointed files
+        git lfs pull
+        Pop-Location
+        LogInfo "New configuration '$name' was added. "
+        LogMessage ""
+        LogMessage "You can now use: "
+        LogMessage ""
+        LogMessage "     devenv config apply $name"
+        LogMessage ""
+        LogMessage "to install it."
+        ; Break
     }
-    else
-    {
-        Write-Host "No configuration with name '$( $opt.name )' exit. Use devenv config --list."
-    }
-}
-elseif ($opt.install)
-{
-    if (!$opt.ContainsKey('url'))
-    {
-        Write-Host "devenv config --install: --url is mandatory"; exit 1
-    }
-    elseif (!$opt.ContainsKey('name'))
-    {
-        Write-Host "devenv config --install: --name is mandatory"; exit 1
-    }
-    Write-Host "Installing a configuration from repo '$($opt.url)' as '$($opt.name)' configuration."
-    Write-Host ""
-
-    if (Test-Path -LiteralPath "$scoopTarget\persist\devenv\config\$( $opt.name )")
-    {
-        Write-Host "Configuration $( $opt.name ) already exist, would you like to override it ?"
-        $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-
-        $decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
-        if ($decision -ne 0)
-        {
-            Write-Host 'Cancelled'
+    "remove" {
+        if (!$name) {
+            LogWarn "name is mandatory."
+            LogMessage ""
+            LogMessage "Usage: devenv config remove [-name <String>] [-force]"
+            LogMessage ""
             return
         }
-        Remove-Item "$scoopTarget\persist\devenv\config\$( $opt.name )" -Force -Recurse
-    }
-
-    Write-Host ""
-    git clone $opt.url "$scoopTarget\persist\devenv\config\$( $opt.name )"
-    Push-Location "$scoopTarget\persist\devenv\config\$( $opt.name )"
-    if ( $opt.ContainsKey('branch'))
-    {
-        $exist = git rev-parse --verify --quiet $opt.branch
-        if (!$exist)
-        {
-            git checkout -b $opt.branch
+        EnsureConfigInstalled $name
+        if (!$force) {
+            LogMessage ""
+            $decision = takeDecision "Do you really want to remove the configuration '$name'? Be sure to unapply it before delete it."
+            if ($decision -ne 0) {
+                LogWarn 'Cancelled'
+                return
+            }
         }
-        else
-        {
-            git checkout $opt.branch
-        }
-    }
-    git lfs pull
-    Pop-Location
-}
-else
-{
-    . "$PSScriptRoot\..\libexec\devenv-help.ps1" $cmd
-}
+        Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+        LogInfo "Configuration '$name' was removed."
 
+        ; Break
+    }
+    "update" {
+        if (!$name) {
+            LogWarn "name is mandatory."
+            LogMessage ""
+            LogMessage "Usage: devenv config update <name> [-force]"
+            LogMessage ""
+            return
+        }
+        EnsureConfigInstalled $name
+        # UnApplyConfiguration
+        m_unapply $name
+        # Rebase
+        LogInfo "Rebasing configuration..."
+        Push-Location $( GetConfigPath $name )
+        git add .
+        git commit -a -m "Snapshot of the configuration"
+        git fetch origin
+        if ($force) {
+            git rebase -Xours origin/master
+        }
+        else {
+            git rebase origin/master
+            git lfs pull
+            $decision = takeDecision "Is your configuration rebased ?"
+            if ($decision -ne 0) {
+                LogWarn 'Trying to reset configuration to previous snapshot.'
+                git rebase --abort
+                git reset --hard
+            }
+        }
+        m_apply $name
+        Pop-Location
+        ; Break
+    }
+    "apply" {
+        m_apply $name
+        ; Break
+    }
+    "unapply" {
+        m_unapply $name
+        ; Break
+    }
+    "list" {
+        LogMessage "List all devenv configuration by names: "
+        $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
+        foreach ($Folder in $Folders) {
+            $Folder = Split-Path -Path $Folder -Leaf
+            LogMessage " * $Folder"
+        }
+        ; Break
+    }
+    default {
+        Invoke-Expression "$PSScriptRoot\devenv-help.ps1 $cmd"
+    }
+}
