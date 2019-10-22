@@ -94,7 +94,12 @@ Switch ($action) {
         ; Break
     }
     "list" {
-        Write-Host "Usage: devenv config list"
+        LogMessage "List all devenv configuration by names: "
+        $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
+        foreach ($Folder in $Folders) {
+            $Folder = Split-Path -Path $Folder -Leaf
+            LogMessage " * $Folder"
+        }
         ; Break
     }
     "check" {
