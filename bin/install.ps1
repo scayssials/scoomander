@@ -38,17 +38,9 @@ scoop install git
 Write-Host ""
 Write-Host "Bootstrap git"
 Write-Host ""
-$username = Read-Host -Prompt 'Prompt your AXWAY Username for git.'
-git config --global user.name $username
-git config --system --replace-all filter.lfs.process 'git-lfs filter-process'
 
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
-
-Add-Content "$( scoop prefix git )/mingw64/ssl/certs/ca-bundle.crt" -Value (Get-Content -Path "$( scoop prefix devenv )/certs/axway.int.crt")
-
-# Install di-conf by default
-devenv config add di-conf https://git.ecd.axway.int/decisioninsight/hacking-week/hw-201910-devenv-configuration.git
 
 Write-Host ""
 Write-Host "Scoop bootstrapped."

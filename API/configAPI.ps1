@@ -6,6 +6,17 @@ $scoopRootDir = scoop prefix scoop
 . "$scoopRootDir\lib\manifest.ps1"
 . "$scoopRootDir\lib\versions.ps1"
 . "$scoopRootDir\lib\install.ps1"
+. "$PSScriptRoot\..\lib\core.ps1"
+
+
+Add-Type -TypeDefinition @"
+    public enum InstallType {
+        NewInstallation,
+        OldInstallation,
+        Update,
+        OnlyExtra
+    }
+"@
 
 Function UnapplyConfigurationFile([String]$configPath) {
     $extrasPath = "$configPath\extras"
@@ -54,19 +65,11 @@ Function ApplyConfigurationFile([String]$configPath) {
     }
 
     # apply extras
-    foreach ($appSpec in $scoopConf.apps) {
-        if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                m_applyExtras $extrasPath $appName
-            }
-        }
-    }
     foreach ($appSpec in $scoopConf.extras) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                m_applyExtras $extrasPath $appName
+                m_applyExtras $extrasPath $appName [InstallType]::OnlyExtra
             }
         }
     }
@@ -104,8 +107,6 @@ Function InstallScoopApps($appSpec, [String]$extrasPath) {
             $install_info = install_info $appName $ver $false
             if ($install_info.bucket -ne $appBucket) {
                 LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
-            } elseif ($appVersion -and ($appVersion -ne $ver)) {
-                LogWarn "Scoop app '$appName' version is '$ver' but declared with version '$appVersion' in the configuration"
             } else {
                 $old_version = current_version $appName $false
                 $install = install_info $appName $old_version
@@ -113,16 +114,19 @@ Function InstallScoopApps($appSpec, [String]$extrasPath) {
                 $version = latest_version $appName $appBucket
                 if ($old_version -eq $version) {
                     LogMessage "The latest version of '$appName' ($version) is already installed."
+                    m_applyExtras $extrasPath $appName $( [InstallType]::OldInstallation )
                 }
                 else {
                     LogInfo "New version of '$appName' detected..."
                     scoop update $appSpec
+                    m_applyExtras $extrasPath $appName $( [InstallType]::Update )
                 }
             }
         }
         else {
             LogUpdate "Install scoop app '$appSpec'"
             scoop install $appSpec
+            m_applyExtras $extrasPath $appName $( [InstallType]::NewInstallation )
         }
     }
     else {
@@ -141,18 +145,20 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath) {
             $version = latest_version $appName $appBucket
             if ($old_version -eq $version) {
                 LogMessage "The latest version of '$appName' ($version) is already installed."
+                m_applyExtras $extrasPath $appName $( [InstallType]::OldInstallation )
             }
             else {
                 LogInfo "New version of '$appName' detected..."
                 scoop update $appSpec
-                if (Test-Path -path $extrasPath/$appName/extra.psm1) {
-                    m_applyExtras $extrasPath $appName
+                if (Test-Path -path $extrasPath/$appName/extra.ps1) {
+                    m_applyExtras $extrasPath $appName $( [InstallType]::Update )
                 }
             }
         }
         else {
             LogMessage "New scoop app detected '$( $appName )'..."
             InstallScoopApps $appSpec $extrasPath
+            m_applyExtras $extrasPath $appName $( [InstallType]::NewInstallation )
         }
     }
     else {
@@ -160,28 +166,26 @@ Function UpdateScoopApps($appSpec, [String]$extrasPath) {
     }
 }
 
-function m_applyExtras($extrasPath, $appName) {
+function m_applyExtras($extrasPath, $appName, [InstallType] $installType) {
     $extra_dir = "$extrasPath\$appName"
-    if (Test-Path -LiteralPath "$extra_dir\extra.psm1") {
+    if (Test-Path -LiteralPath "$extra_dir\extra.ps1") {
         LogMessage "Applying '$appName' extras from '$extra_dir'"
-        Import-Module $extra_dir/extra.psm1
         $appdir = appdir $appName/current
         $persist_dir = persistdir $appName
-        apply $extra_dir $appdir $persist_dir
-        Remove-Module extra
+        . $extra_dir/extra.ps1
+        apply $extra_dir $appdir $persist_dir $installType
         LogInfo "-> '$appName' extras was applied"
     }
 }
 
 function m_unapplyExtras($extrasPath, $appName) {
     $extra_dir = "$extrasPath\$appName"
-    if (Test-Path -LiteralPath "$extra_dir\extra.psm1") {
+    if (Test-Path -LiteralPath "$extra_dir\extra.ps1") {
         LogMessage "Unapplying '$appName' extras from '$extra_dir'"
-        Import-Module $extra_dir/extra.psm1
         $appdir = appdir $appName/current
         $persist_dir = persistdir $appName
+        . $extra_dir/extra.ps1
         unapply $extra_dir $appdir $persist_dir
-        Remove-Module extra
         LogInfo "-> '$appName' extras was unapplied"
     }
 }

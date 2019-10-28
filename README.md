@@ -4,37 +4,43 @@
 
 In PowerShell console execute
 ```
-iwr -useb 'https://tinyurl.com/devenv-install-alpha' | iex
+iwr -useb 'https://raw.githubusercontent.com/stephanec1/devenv/master/bin/install.ps1' | iex
 ```
 then
 
 ```
-devenv config --apply --name di-conf
+devenv config apply [-Name <String>]
 ```
 
 ## Usage
 
-### Install a configuration
+### Add a configuration
 
 ```
-devenv config --install --url plop.url --name confName
+devenv config add [-Name <String>] [-url <String>] 
 ```
 
 ### Apply a configuration
 
 ```
-devenv config --apply --name confName
+devenv config apply [-Name <String>]
+```
+
+### UnApply a configuration
+
+```
+devenv config unapply [-Name <String>]
 ```
 
 ### Update and apply a configuration
 ```
-devenv config --update --name confName [--force]
+devenv config update [-Name <String>] [--force]*
 ```
 The force will erase your own modification
 If you want to keep your modification don't use --force and rebase your configuration by yourself
 
 ### Update your own configuration
-Every configurations are located in ```<devenvDir>/persist/devevn/config```
+Every configurations are located in ```<devenvDir>/persist/devenv/config```
 All your configuration are coming from git so you can easily update it locally and remotely
 
 configuration example:
