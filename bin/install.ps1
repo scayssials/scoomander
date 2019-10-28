@@ -2,9 +2,8 @@ $defaultScoopTarget = 'C:\devenv\scoop'
 $changeExecutionPolicy = (Get-ExecutionPolicy) -gt 'RemoteSigned' -or (Get-ExecutionPolicy) -eq 'ByPass'
 
 $scoopTarget = Read-Host -Prompt "Where do you want to install your devenv? [$defaultScoopTarget]"
-if ([string]::IsNullOrWhiteSpace($scoopTarget))
-{
-   $scoopTarget = $defaultScoopTarget
+if ( [string]::IsNullOrWhiteSpace($scoopTarget)) {
+    $scoopTarget = $defaultScoopTarget
 }
 
 Write-Host "Scoop will be installed to $scoopTarget"
@@ -13,15 +12,12 @@ if ($changeExecutionPolicy) {
 } else {
     Write-Host "Current user execution policy don't need to be changed (current value is $( Get-ExecutionPolicy ))"
 }
-Write-Host ""
 
-Write-Host "Do you want to proceed with the Devenv installation ?"
-
-$choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-$choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-$choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-
-$decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
+$title = "Do you want to proceed with the Devenv installation ?"
+$Prompt = "Enter your choice"
+$Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Yes", "&No")
+$Default = 1
+$decision = $host.UI.PromptForChoice($Title, $Prompt, $Choices, $Default)
 if ($decision -ne 0) {
     Write-Host 'Cancelled'
     return
@@ -35,12 +31,14 @@ if ($changeExecutionPolicy) {
 iwr -useb get.scoop.sh | iex
 
 scoop install git
-Write-Host ""
-Write-Host "Bootstrap git"
-Write-Host ""
 
 scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
 scoop install devenv/devenv
 
 Write-Host ""
-Write-Host "Scoop bootstrapped."
+Write-Host -ForegroundColor Green "Scoop bootstrapped and Devenv installed."
+Write-Host "Try "
+Write-Host ""
+Write-Host -ForegroundColor Cyan "     devenv help"
+Write-Host ""
+Write-Host "to get more infos."

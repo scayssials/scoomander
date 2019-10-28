@@ -23,33 +23,10 @@ Param(
 
 # Import usefull scripts
 . "$PSScriptRoot\..\lib\logger.ps1"
+. "$PSScriptRoot\..\lib\core.ps1"
 
 # Set global variables
 $scoopTarget = $env:SCOOP
-
-Function TakeDecision([String]$question, [String]$cancelMessage) {
-    LogMessage ""
-    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-    return $Host.UI.PromptForChoice($message, $question, $choices, 1)
-}
-
-Function GetConfigPath([String]$configName) {
-    return "$scoopTarget\persist\devenv\config\$configName"
-}
-
-Function IsConfigInstalled([String]$configName) {
-    return Test-Path -LiteralPath $( GetConfigPath $configName )
-}
-
-Function EnsureConfigInstalled([String]$configName) {
-    if (-Not (IsConfigInstalled $configName)) {
-        LogWarn "The configuration '$configName' do not exist."
-        devenv config list
-        exit 1
-    }
-}
 
 Function m_apply([String]$configName) {
     if (!$configName) {
@@ -79,30 +56,6 @@ Function m_unapply([String]$configName) {
     . "$PSScriptRoot\..\config\$configName\main.ps1" "unapply"
 }
 
-function Invoke-Utility {
-    <#
-.SYNOPSIS
-Invokes an external utility, ensuring successful execution.
-
-.DESCRIPTION
-Invokes an external utility (program) and, if the utility indicates failure by
-way of a nonzero exit code, throws a script-terminating error.
-
-* Pass the command the way you would execute the command directly.
-* Do NOT use & as the first argument if the executable name is not a literal.
-
-.EXAMPLE
-Invoke-Utility git push
-
-Executes `git push` and throws a script-terminating error if the exit code
-is nonzero.
-#>
-    $exe, $argsForExe = $Args
-    $ErrorActionPreference = 'Stop' # in case $exe isn't found
-    & $exe $argsForExe
-    if ($LASTEXITCODE) { Throw "$exe indicated failure (exit code $LASTEXITCODE; full command: $Args)." }
-}
-
 Switch ($action) {
     "add" {
         if (!$name -or !$url) {
@@ -112,11 +65,9 @@ Switch ($action) {
             LogMessage ""
             return
         }
-        LogMessage "Adding configuration '$name' from repo '$url'."
         # Ask for override if the configuration already exist
         if (IsConfigInstalled $name) {
             if (!$force) {
-                LogMessage ""
                 $decision = takeDecision "A configuration named '$name' already exist, would you like to override it ?"
                 if ($decision -ne 0) {
                     LogWarn 'Cancelled'
@@ -135,12 +86,12 @@ Switch ($action) {
             LogWarn "For ssl issues add the right certification or use 'git config --global http.sslVerify false'."
             throw
         }
+        Push-Location "$scoopTarget\persist\devenv\config\$name"
         $exist = git rev-parse --verify --quiet $branch
         if (!$exist) { git checkout -b $branch }
         else { git checkout $branch }
         Pop-Location
-        LogInfo "New configuration '$name' was added. "
-        LogMessage ""
+        LogInfo "Configuration '$name' was added."
         LogMessage "You can now use: "
         LogMessage ""
         LogMessage "     devenv config apply $name"
@@ -158,14 +109,14 @@ Switch ($action) {
         }
         EnsureConfigInstalled $name
         if (!$force) {
-            LogMessage ""
             $decision = takeDecision "Do you really want to remove the configuration '$name'? Be sure to unapply it before delete it."
             if ($decision -ne 0) {
-                LogWarn 'Cancelled'
+                LogWarn 'Remove configuration cancelled.'
                 return
             }
         }
         Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+        LogMessage ""
         LogInfo "Configuration '$name' was removed."
         ; Break
     }
@@ -178,13 +129,11 @@ Switch ($action) {
             return
         }
         EnsureConfigInstalled $name
-        # UnApplyConfiguration
-        m_unapply $name
         # Rebase
         LogInfo "Rebasing configuration..."
         Push-Location $( GetConfigPath $name )
         git add .
-        git commit -a -m "Snapshot of the configuration"
+        git commit -a -m "[Devenv Update] Configuration Snapshot"
         git fetch origin
         if ($force) {
             git rebase -Xours origin/master
