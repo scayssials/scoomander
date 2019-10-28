@@ -5,7 +5,7 @@
 # devenv config remove [-name <String>]* [-force]
 # devenv config update [-name <String>]* [-force]
 # devenv config apply [-name <String>]*
-# devenv config unapply [-name <String>]*
+# devenv config unapply [-name <String>] [-force]*
 # devenv config list
 
 Param(
@@ -23,33 +23,10 @@ Param(
 
 # Import usefull scripts
 . "$PSScriptRoot\..\lib\logger.ps1"
+. "$PSScriptRoot\..\lib\core.ps1"
 
 # Set global variables
 $scoopTarget = $env:SCOOP
-
-Function TakeDecision([String]$question, [String]$cancelMessage) {
-    LogMessage ""
-    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-    return $Host.UI.PromptForChoice($message, $question, $choices, 1)
-}
-
-Function GetConfigPath([String]$configName) {
-    return "$scoopTarget\persist\devenv\config\$configName"
-}
-
-Function IsConfigInstalled([String]$configName) {
-    return Test-Path -LiteralPath $( GetConfigPath $configName )
-}
-
-Function EnsureConfigInstalled([String]$configName) {
-    if (-Not (IsConfigInstalled $configName)) {
-        LogWarn "The configuration '$configName' do not exist."
-        devenv test list
-        exit 1
-    }
-}
 
 Function m_apply([String]$configName) {
     if (!$configName) {
@@ -61,7 +38,7 @@ Function m_apply([String]$configName) {
     }
     EnsureConfigInstalled $configName
     #load API
-    . "$PSScriptRoot\..\API\configAPI.ps1"
+    . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
     . "$PSScriptRoot\..\config\$configName\main.ps1" "apply"
 }
 
@@ -75,7 +52,7 @@ Function m_unapply([String]$configName) {
     }
     EnsureConfigInstalled $configName
     #load API
-    . "$PSScriptRoot\..\API\configAPI.ps1"
+    . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
     . "$PSScriptRoot\..\config\$configName\main.ps1" "unapply"
 }
 
@@ -88,11 +65,9 @@ Switch ($action) {
             LogMessage ""
             return
         }
-        LogMessage "Adding configuration '$name' from repo '$url'."
         # Ask for override if the configuration already exist
         if (IsConfigInstalled $name) {
             if (!$force) {
-                LogMessage ""
                 $decision = takeDecision "A configuration named '$name' already exist, would you like to override it ?"
                 if ($decision -ne 0) {
                     LogWarn 'Cancelled'
@@ -103,14 +78,20 @@ Switch ($action) {
             LogInfo "Old configuration '$name' was erased."
         }
         # Clone configuration and checkout to the specified branch
-        git clone $url "$scoopTarget\persist\devenv\config\$name"
+        try {
+            Invoke-Utility git clone $url "$scoopTarget\persist\devenv\config\$name"
+        }
+        catch {
+            LogWarn "Impossible to Clone '$url' to '$scoopTarget\persist\devenv\config\$name'. Check the error message and your git configuration."
+            LogWarn "For ssl issues add the right certification or use 'git config --global http.sslVerify false'."
+            throw
+        }
         Push-Location "$scoopTarget\persist\devenv\config\$name"
         $exist = git rev-parse --verify --quiet $branch
         if (!$exist) { git checkout -b $branch }
         else { git checkout $branch }
         Pop-Location
-        LogInfo "New configuration '$name' was added. "
-        LogMessage ""
+        LogInfo "Configuration '$name' was added."
         LogMessage "You can now use: "
         LogMessage ""
         LogMessage "     devenv config apply $name"
@@ -128,16 +109,15 @@ Switch ($action) {
         }
         EnsureConfigInstalled $name
         if (!$force) {
-            LogMessage ""
             $decision = takeDecision "Do you really want to remove the configuration '$name'? Be sure to unapply it before delete it."
             if ($decision -ne 0) {
-                LogWarn 'Cancelled'
+                LogWarn 'Remove configuration cancelled.'
                 return
             }
         }
         Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+        LogMessage ""
         LogInfo "Configuration '$name' was removed."
-
         ; Break
     }
     "update" {
@@ -149,13 +129,11 @@ Switch ($action) {
             return
         }
         EnsureConfigInstalled $name
-        # UnApplyConfiguration
-        m_unapply $name
         # Rebase
         LogInfo "Rebasing configuration..."
         Push-Location $( GetConfigPath $name )
         git add .
-        git commit -a -m "Snapshot of the configuration"
+        git commit -a -m "[Devenv Update] Configuration Snapshot"
         git fetch origin
         if ($force) {
             git rebase -Xours origin/master
