@@ -226,6 +226,7 @@ Once your first configuration is done, publish it on a remote git repository
 #### Add configuration A
 
 `devenv config add -Name <conf_name> -Url <git_url> [-force]`
+
 this will clone the configuration from the `git_url` in `<devenv_dir>/persist/devenv/config/<conf_name>` and checkout a new local branch `current`
 
 (If you want to test a configuration that is not yet on a remote repository, you can create your configuration under `<devenv_dir>/persist/devenv/config/<conf_name>`)
@@ -233,12 +234,14 @@ this will clone the configuration from the `git_url` in `<devenv_dir>/persist/de
 #### Apply configuration A
 
 `devenv config apply <conf_name>`
+
 This will install your conf `buckets`, `apps` and apply your `extras` as you have defined them in your configuration
 
 
 ## Update localy your configuration
 
 You can directly work on your configuration by editing it in `<devenv_dir>/persist/devenv/config/<conf_name>`
+
 You can test your changes by running `devenv config apply <conf_name>`
 
 You can also work localy on your installed buckets to update some app `manifest.json` and run `devenv config update <conf_name>` to apply it
@@ -247,9 +250,15 @@ You can also work localy on your installed buckets to update some app `manifest.
 ## Share your new configuration
 
 When you are confident with your changes you can merge then on the master branch of the configuration
-Then anyone can install the new configuration by running 
-`devenv config update <conf_name> [-force]` OR directly rebase there current configuration branch on master
+
+Then anyone can install the new configuration by running
+
+`devenv config update <conf_name> [-force]` 
+
+OR directly rebase there current configuration branch on master
+
 and then
+
 `devenv config apply <conf_name>`
 
 
