@@ -4,7 +4,6 @@
 ## Install the deven
 
 `iwr -useb 'https://raw.githubusercontent.com/stephanec1/devenv/master/bin/install.ps1' | iex`
-choose where to install it
 
 ## Create your first configuration
 
