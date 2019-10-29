@@ -273,10 +273,13 @@ and then
 
 #### First uninstall every conf apps and unapply extras
 `devenv config unapply <conf_name> [-force]`
+
 If -force is not used, the devenv will ask you for every apps if you wants to uninstall them
+
 If a given app is referenced in multiple configurations, the devenv will only uninstall app that has been installed with the given configuration
 
 #### Remove the configuration
 `devenv config remove <conf_name>`
+
 This will delete your configuration from `<devenv_dir>/persist/devenv/config/<conf_name>`
 
