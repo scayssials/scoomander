@@ -1,5 +1,12 @@
 . "$PSScriptRoot\logger.ps1"
 
+<#
+Update an environment variable or create it if necessary
+Environment variable are setted in the current process and in the user
+
+.EXAMPLE
+devenvUtils_UpdateEnvironmentVariable PUTTY_HOME C:/scoop/app/putty/current
+ #>
 function devenvUtils_UpdateEnvironmentVariable([String]$Name, [String]$Value) {
     $currentValue = [environment]::GetEnvironmentVariable($Name)
     if ($Value) {
@@ -27,6 +34,15 @@ function devenvUtils_UpdateEnvironmentVariable([String]$Name, [String]$Value) {
     }
 }
 
+<#
+Remove an environment variable if it exist with the matched value
+if the value is null, remove the env var
+
+.EXAMPLE
+devenvUtils_RemoveEnvironmentVariable PUTTY_HOME C:/scoop/app/putty/current
+or
+devenvUtils_RemoveEnvironmentVariable PUTTY_HOME
+ #>
 function devenvUtils_RemoveEnvironmentVariable([String]$Name, [String]$Value) {
     $currentValue = [environment]::GetEnvironmentVariable($Name)
     if ($Value) {
@@ -52,6 +68,15 @@ function devenvUtils_RemoveEnvironmentVariable([String]$Name, [String]$Value) {
     }
 }
 
+<#
+Install a devenv plugin
+The plugin can then be called by running devenv <pluginName>
+
+.EXAMPLE
+devenvUtils_installPlugin setJavaHome C:/...../setJavaHome.ps1
+
+Then, by calling devenv setJavaHome, the script setJavaHome.ps1 will be called
+ #>
 function devenvUtils_installPlugin([String]$Name, [String]$ScriptFile) {
     if ($Name) {
         if ($ScriptFile) {
@@ -70,6 +95,12 @@ function devenvUtils_installPlugin([String]$Name, [String]$ScriptFile) {
     }
 }
 
+<#
+Remove the mentionned plugin
+
+.EXAMPLE
+devenvUtils_removePlugin setJavaHome
+ #>
 function devenvUtils_removePlugin([String]$Name) {
     if ($Name) {
         if (Test-Path -path "$( scoop prefix devenv )/plugins/devenv-$Name.ps1") {
@@ -82,4 +113,35 @@ function devenvUtils_removePlugin([String]$Name) {
     else {
         LogWarn "No plugin name specified."
     }
+}
+
+<#
+Store the version used to apply extras
+return true if the value has been updated
+Can be used to now if an extra should be applied or not
+ #>
+function devenvUtils_updateExtraVersion([String]$persist_dir, [String]$version) {
+    if (Test-Path -LiteralPath "$persist_dir/.version") {
+        $currentVersion = Get-Content -Path "$persist_dir/.version"
+        if ($currentVersion -eq $version) {
+            LogMessage "The latest version of extra already installed"
+            return $false
+        } else {
+            LogUpdate "Updating extra version from $currentVersion to $version"
+            Set-Content "$persist_dir/.version" -Value $version
+            return $true
+        }
+    } else {
+        LogUpdate "Creating extra version $version"
+        New-Item -ItemType File -Path "$persist_dir/.version" -Force
+        Set-Content "$persist_dir/.version" -Value $version
+        return $true
+    }
+}
+
+<#
+Remove the stored version
+ #>
+function devenvUtils_removeExtraVersion([String]$persist_dir) {
+    Remove-Item "$persist_dir/.version" -Force
 }

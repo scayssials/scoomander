@@ -5,7 +5,7 @@
 # devenv config remove [-name <String>]* [-force]
 # devenv config update [-name <String>]* [-force]
 # devenv config apply [-name <String>]*
-# devenv config unapply [-name <String>]*
+# devenv config unapply [-name <String>] [-force]*
 # devenv config list
 
 Param(
@@ -38,7 +38,7 @@ Function m_apply([String]$configName) {
     }
     EnsureConfigInstalled $configName
     #load API
-    . "$PSScriptRoot\..\API\configAPI.ps1"
+    . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
     . "$PSScriptRoot\..\config\$configName\main.ps1" "apply"
 }
 
@@ -52,7 +52,7 @@ Function m_unapply([String]$configName) {
     }
     EnsureConfigInstalled $configName
     #load API
-    . "$PSScriptRoot\..\API\configAPI.ps1"
+    . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
     . "$PSScriptRoot\..\config\$configName\main.ps1" "unapply"
 }
 
