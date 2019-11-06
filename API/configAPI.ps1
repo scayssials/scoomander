@@ -180,7 +180,7 @@ function m_applyExtra($extrasPath, $appName, [ApplyType] $type, $version, $old_v
     $extra_dir = "$extrasPath\$appName"
     if (Test-Path -LiteralPath "$extra_dir\extra.ps1") {
         LogMessage "Running $type extras for $appName..."
-        $appdir = appdir $appName/current
+        $appdir = appdir $appName\current
         $persist_dir = persistdir $appName
         . $extra_dir/extra.ps1
         switch ($type) {

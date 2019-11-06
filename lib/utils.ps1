@@ -1,4 +1,6 @@
 . "$PSScriptRoot\logger.ps1"
+. "$( scoop prefix scoop )\lib\shortcuts.ps1"
+. "$( scoop prefix scoop )\lib\decompress.ps1"
 
 <#
 Update an environment variable or create it if necessary
@@ -144,4 +146,38 @@ Remove the stored version
  #>
 function devenvUtils_removeExtraVersion([String]$persist_dir) {
     Remove-Item "$persist_dir/.version" -Force
+}
+
+function devenvUtils_addMenuShortcut([System.IO.FileInfo]$target, $shortcutName, [System.IO.FileInfo]$icon) {
+    startmenu_shortcut $target $shortcutName "" $icon
+}
+
+function devenvUtils_rmMenuShortcut($shortcutName) {
+    $shortcut = "$shortcut_folder\$shortcutName.lnk"
+    write-host "Removing shortcut $( friendly_path $shortcut )"
+    if (Test-Path -Path $shortcut) {
+        Remove-Item $shortcut
+    }
+}
+
+function devenvUtils_decompress([String]$fileName, [String]$extract_to, [String]$extract_dir) {
+    # work out extraction method, if applicable
+    if (((get_config 7ZIPEXTRACT_USE_EXTERNAL) -and (Test-CommandAvailable 7z)) -or (Test-HelperInstalled -Helper 7zip)) {
+        $extract_fn = 'Expand-7zipArchive'
+    } else {
+        $extract_fn = 'Expand-ZipArchive'
+    }
+
+    if ($extract_fn) {
+        Write-Host "Extracting " -NoNewline
+        Write-Host $fileName -f Cyan -NoNewline
+        Write-Host " ... " -NoNewline
+        if ($extract_dir) {
+            & $extract_fn -Path "$fileName" -DestinationPath $extract_to -ExtractDir $extract_dir
+        } else {
+            & $extract_fn -Path "$fileName" -DestinationPath $extract_to
+        }
+        Write-Host "done." -f Green
+        $extracted++
+    }
 }
