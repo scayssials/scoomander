@@ -4,7 +4,7 @@
 
 In PowerShell console execute
 ```
-iwr -useb 'https://raw.githubusercontent.com/stephanec1/devenv/master/bin/install.ps1' | iex
+iwr -useb 'https://raw.githubusercontent.com/scayssials/devenv/master/bin/install.ps1' | iex
 ```
 then
 
