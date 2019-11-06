@@ -4,8 +4,8 @@
 # devenv config add [-name <String>]* [-url <String>]* [-branch <String>] [-force]
 # devenv config remove [-name <String>]* [-force]
 # devenv config update [-name <String>]* [-force]
-# devenv config apply [-name <String>]*
-# devenv config unapply [-name <String>] [-force]*
+# devenv config apply [-name <String>]* [-appName <String>]*
+# devenv config unapply [-name <String>] [-force]* [-appName <String>]*
 # devenv config list
 
 Param(
@@ -16,9 +16,11 @@ Param(
     [String]
     $url,
     [String]
-    $branch="current",
+    $branch = "current",
     [Switch]
-    $force
+    $force,
+    [String]
+    $appName
 )
 
 # Import usefull scripts
@@ -39,7 +41,7 @@ Function m_apply([String]$configName) {
     EnsureConfigInstalled $configName
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
-    . "$PSScriptRoot\..\config\$configName\main.ps1" "apply"
+    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "apply" -appName $appName
 }
 
 Function m_unapply([String]$configName) {
@@ -53,7 +55,7 @@ Function m_unapply([String]$configName) {
     EnsureConfigInstalled $configName
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
-    . "$PSScriptRoot\..\config\$configName\main.ps1" "unapply"
+    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "unapply" -appName $appName
 }
 
 Switch ($action) {

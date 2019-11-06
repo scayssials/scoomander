@@ -17,7 +17,7 @@ enum ApplyType {
     Idem
 }
 
-Function ApplyConfigurationFile([String]$configPath) {
+Function ApplyConfigurationFile([String]$configPath, [String]$appName) {
 
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
 
@@ -35,125 +35,127 @@ Function ApplyConfigurationFile([String]$configPath) {
     $extrasPath = "$configPath\extras"
     foreach ($appSpec in $scoopConf.apps) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            InstallScoopApp $appSpec $extrasPath
+            if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
+                $specAppName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
+                if (!$appName -or $appName -eq $specAppName) {
+                    InstallScoopApp $specAppName $appBucket $extrasPath
+                }
+            }
         }
     }
     # apply lonely extras
     foreach ($appSpec in $scoopConf.extras) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $appName, $appVersion = $matches['app'], $matches['version']
-                LogUpdate "* Applying extra of $appName version $appVersion"
-                m_applyExtra $extrasPath $appName $( [ApplyType]::Idem ) $appVersion
+                $specAppName, $appVersion = $matches['app'], $matches['version']
+                if (!$appName -or $appName -eq $specAppName) {
+                    LogUpdate "* Applying extra of $specAppName version $appVersion"
+                    m_applyExtra $extrasPath $specAppName $( [ApplyType]::Idem ) $appVersion
+                }
             }
         }
     }
 }
 
-Function UnapplyConfigurationFile([String]$configPath) {
+Function UnapplyConfigurationFile([String]$configPath, [String]$appName) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
     # uninstall apps and unapply app extras
     foreach ($appSpec in $scoopConf.apps) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            RemoveScoopApp $appSpec $extrasPath
+            if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
+                $specAppName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
+                if (!$appName -or $appName -eq $specAppName) {
+                    RemoveScoopApp $specAppName $appBucket $extrasPath
+                }
+            }
         }
     }
     # unapply lonely extras
     foreach ($appSpec in $scoopConf.extras) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $appName, $appVersion = $matches['app'], $matches['version']
-                LogUpdate "* UnApplying extra of $appName version $appVersion"
-                m_applyExtra $extrasPath $appName $( [ApplyType]::CleanUp ) $appVersion
-            }
-        }
-    }
-}
-
-Function RemoveScoopApp([String]$appSpec, [String]$extrasPath) {
-    if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-        LogUpdate "* Unapplying configuration for app '$appSpec'..."
-        $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-        if (!$appBucket) {
-            $appBucket = "main"
-        }
-        if (installed $appName) {
-            $appConfigName = m_getConfigName $appName
-            $from_version = current_version $appName $false
-            $install = install_info $appName $from_version
-            $currentAppBucket = $install.bucket
-            $to_version = latest_version $appName $appBucket
-            if ($appConfigName -ne $configName) {
-                LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
-                LogMessage "Use the unappy of the right configuration to uninstall it, or directly by running 'scoop uninstall $appName' (this will not cleanup app extras if there is some)"
-                return
-            }
-            if ($currentAppBucket -ne $appBucket) {
-                LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
-                return
-            }
-            if (!$force) {
-                $decision = takeDecision "The scoop app '$appName' will be removed. Do you want to continue?"
-                if ($decision -ne 0) {
-                    LogWarn 'Cancelled'
-                    return
+                $specAppName, $appVersion = $matches['app'], $matches['version']
+                if (!$appName -or $appName -eq $specAppName) {
+                    LogUpdate "* UnApplying extra of $specAppName version $appVersion"
+                    m_applyExtra $extrasPath $specAppName $( [ApplyType]::CleanUp ) $appVersion
                 }
             }
-            m_applyExtra $extrasPath $appName $( [ApplyType]::CleanUp ) $from_version
-            scoop uninstall $appSpec
-        } else {
-            LogMessage "'$appName' isn't installed."
         }
-    }
-    else {
-        LogWarn "Invalid application : $appSpec"
     }
 }
 
-Function InstallScoopApp([String]$appSpec, [String]$extrasPath) {
-    if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-        LogUpdate "* Applying configuration for app '$appSpec'"
-        $appName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-        if (!$appBucket) {
-            $appBucket = "main"
+Function RemoveScoopApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
+    LogUpdate "* Unapplying configuration for app '$appSpec'..."
+    if (!$appBucket) {
+        $appBucket = "main"
+    }
+    if (installed $appName) {
+        $appConfigName = m_getConfigName $appName
+        $from_version = current_version $appName $false
+        $install = install_info $appName $from_version
+        $currentAppBucket = $install.bucket
+        $to_version = latest_version $appName $appBucket
+        if ($appConfigName -ne $configName) {
+            LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
+            LogMessage "Use the unappy of the right configuration to uninstall it, or directly by running 'scoop uninstall $appName' (this will not cleanup app extras if there is some)"
+            return
         }
-        if (installed $appName) {
-            $appConfigName = m_getConfigName $appName
-            $from_version = current_version $appName $false
-            $install = install_info $appName $from_version
-            $currentAppBucket = $install.bucket
-            $to_version = latest_version $appName $appBucket
-            if ($appConfigName -ne $configName) {
-                LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
+        if ($currentAppBucket -ne $appBucket) {
+            LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
+            return
+        }
+        if (!$force) {
+            $decision = takeDecision "The scoop app '$appName' will be removed. Do you want to continue?"
+            if ($decision -ne 0) {
+                LogWarn 'Cancelled'
                 return
             }
-            if ($currentAppBucket -ne $appBucket) {
-                LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
-                return
-            }
-            if ($from_version -eq $to_version) {
-                LogMessage "The latest version of '$appName' ($to_version) is already installed."
-                m_applyExtra $extrasPath $appName $( [ApplyType]::Idem ) $to_version
-            }
-            else {
-                LogInfo "New version of '$appName' detected..."
-                m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
-                scoop update $appSpec
-                m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
-                m_AddConfigName $appName
-            }
+        }
+        m_applyExtra $extrasPath $appName $( [ApplyType]::CleanUp ) $from_version
+        scoop uninstall $appSpec
+    } else {
+        LogMessage "'$appName' isn't installed."
+    }
+}
+
+Function InstallScoopApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
+    LogUpdate "* Applying configuration for app '$appSpec'"
+    if (!$appBucket) {
+        $appBucket = "main"
+    }
+    if (installed $appName) {
+        $appConfigName = m_getConfigName $appName
+        $from_version = current_version $appName $false
+        $install = install_info $appName $from_version
+        $currentAppBucket = $install.bucket
+        $to_version = latest_version $appName $appBucket
+        if ($appConfigName -ne $configName) {
+            LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
+            return
+        }
+        if ($currentAppBucket -ne $appBucket) {
+            LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
+            return
+        }
+        if ($from_version -eq $to_version) {
+            LogMessage "The latest version of '$appName' ($to_version) is already installed."
+            m_applyExtra $extrasPath $appName $( [ApplyType]::Idem ) $to_version
         }
         else {
-            LogUpdate "Install scoop app '$appSpec'"
-            scoop install $appSpec
-            $to_version = current_version $appName $false
-            m_applyExtra $extrasPath $appName $( [ApplyType]::PostInstall ) $to_version
+            LogInfo "New version of '$appName' detected..."
+            m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
+            scoop update $appSpec
+            m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
             m_AddConfigName $appName
         }
     }
     else {
-        LogWarn "Invalid application : $appSpec"
+        LogUpdate "Install scoop app '$appSpec'"
+        scoop install $appSpec
+        $to_version = current_version $appName $false
+        m_applyExtra $extrasPath $appName $( [ApplyType]::PostInstall ) $to_version
+        m_AddConfigName $appName
     }
 }
 
