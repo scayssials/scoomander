@@ -3,7 +3,7 @@
 
 ## Install the devenv
 
-`iwr -useb 'https://raw.githubusercontent.com/stephanec1/devenv/master/bin/install.ps1' | iex`
+`iwr -useb 'https://raw.githubusercontent.com/scayssials/devenv/master/bin/install.ps1' | iex`
 
 ## Create your first configuration
 
