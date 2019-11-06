@@ -32,7 +32,7 @@ iwr -useb get.scoop.sh | iex
 
 scoop install git
 
-scoop bucket add devenv https://github.com/stephanec1/devenv-bucket.git
+scoop bucket add devenv https://github.com/scayssials/devenv-bucket.git
 scoop install devenv/devenv
 
 Write-Host ""
