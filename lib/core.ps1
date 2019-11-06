@@ -54,3 +54,14 @@ function Invoke-Utility {
     & $exe $argsForExe
     if ($LASTEXITCODE) { Throw "$exe indicated failure (exit code $LASTEXITCODE; full command: $Args)." }
 }
+
+<#
+Invoke a script block without git http.sslVerify
+#>
+function UnverifySslGitAction([ScriptBlock]$script){
+    $sslVerify = git config --global --get http.sslVerify
+    git config --global http.sslVerify false
+    & $script
+    git config --global --unset http.sslVerify
+    git config --global http.sslVerify $sslVerify
+}

@@ -23,7 +23,7 @@ Param(
     $appName
 )
 
-# Import usefull scripts
+# Import useful scripts
 . "$PSScriptRoot\..\lib\logger.ps1"
 . "$PSScriptRoot\..\lib\core.ps1"
 
@@ -81,11 +81,12 @@ Switch ($action) {
         }
         # Clone configuration and checkout to the specified branch
         try {
-            Invoke-Utility git clone $url "$scoopTarget\persist\devenv\config\$name"
+            UnverifySslGitAction {
+                Invoke-Utility git clone $url "$scoopTarget\persist\devenv\config\$name"
+            }
         }
         catch {
             LogWarn "Impossible to Clone '$url' to '$scoopTarget\persist\devenv\config\$name'. Check the error message and your git configuration."
-            LogWarn "For ssl issues add the right certification or use 'git config --global http.sslVerify false'."
             throw
         }
         Push-Location "$scoopTarget\persist\devenv\config\$name"
