@@ -1,7 +1,7 @@
 # :poultry_leg: Devenv Cookbook :poultry_leg:
 
 
-## Install the deven
+## Install the devenv
 
 `iwr -useb 'https://raw.githubusercontent.com/stephanec1/devenv/master/bin/install.ps1' | iex`
 
@@ -21,7 +21,7 @@ it will first install required scoop `buckets`, then scoop `app` and then `extra
         "[?bucket/]app_name[?@version]"
     ],
     "extras": [
-        "extra_name"
+        "extra_name[?@version]"
     ]
 }
 ```
