@@ -7,6 +7,16 @@
 
 ## Create your first configuration
 
+A configuration is a git repository that contains
+
+```
+/extras
+    /appName
+        /extra.ps1
+conf.json
+main.ps1
+```
+
 #### conf.json
 
 The conf.json file represents what the devenv should install
