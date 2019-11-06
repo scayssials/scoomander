@@ -29,7 +29,9 @@ Function ApplyConfigurationFile([String]$configPath, [String]$appName) {
     }
 
     # update scoop / update all buckets
-    scoop update
+    UnverifySslGitAction {
+        scoop update
+    }
 
     # install apps and apply app extras
     $extrasPath = "$configPath\extras"
@@ -169,7 +171,9 @@ Function InstallScoopBucket($bucketSpec) {
             LogMessage "Scoop bucket '$bucketName' is already installed"
         } else {
             LogUpdate "Add scoop bucket '$bucketSpec'"
-            scoop bucket add $bucketName $bucketRepo
+            UnverifySslGitAction {
+                scoop bucket add $bucketName $bucketRepo
+            }
         }
         return $bucketName
     }
