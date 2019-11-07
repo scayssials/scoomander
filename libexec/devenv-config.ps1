@@ -19,8 +19,8 @@ Param(
     $branch = "current",
     [Switch]
     $force,
-    [String]
-    $appName
+    [String[]]
+    $appNames
 )
 
 # Import useful scripts
@@ -41,7 +41,7 @@ Function m_apply([String]$configName) {
     EnsureConfigInstalled $configName
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
-    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "apply" -appName $appName
+    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "apply" -appNames $appNames
 }
 
 Function m_unapply([String]$configName) {
@@ -55,7 +55,7 @@ Function m_unapply([String]$configName) {
     EnsureConfigInstalled $configName
     #load API
     . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
-    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "unapply" -appName $appName
+    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "unapply" -appNames $appNames
 }
 
 Switch ($action) {

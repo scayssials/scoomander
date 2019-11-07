@@ -17,7 +17,7 @@ enum ApplyType {
     Idem
 }
 
-Function ApplyConfigurationFile([String]$configPath, [String]$appName) {
+Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
 
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
 
@@ -39,7 +39,7 @@ Function ApplyConfigurationFile([String]$configPath, [String]$appName) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $specAppName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                if (!$appName -or $appName -eq $specAppName) {
+                if (!$appNames -or $appNames.Contains($specAppName)) {
                     InstallScoopApp $specAppName $appBucket $extrasPath
                 }
             }
@@ -50,7 +50,7 @@ Function ApplyConfigurationFile([String]$configPath, [String]$appName) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $specAppName, $appVersion = $matches['app'], $matches['version']
-                if (!$appName -or $appName -eq $specAppName) {
+                if (!$appNames -or $appNames.Contains($specAppName)) {
                     LogUpdate "* Applying extra of $specAppName version $appVersion"
                     m_applyExtra $extrasPath $specAppName $( [ApplyType]::Idem ) $appVersion
                 }
@@ -59,7 +59,7 @@ Function ApplyConfigurationFile([String]$configPath, [String]$appName) {
     }
 }
 
-Function UnapplyConfigurationFile([String]$configPath, [String]$appName) {
+Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
     # uninstall apps and unapply app extras
@@ -67,7 +67,7 @@ Function UnapplyConfigurationFile([String]$configPath, [String]$appName) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $specAppName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                if (!$appName -or $appName -eq $specAppName) {
+                if (!$appNames -or $appNames.Contains($specAppName)) {
                     RemoveScoopApp $specAppName $appBucket $extrasPath
                 }
             }
@@ -78,7 +78,7 @@ Function UnapplyConfigurationFile([String]$configPath, [String]$appName) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $specAppName, $appVersion = $matches['app'], $matches['version']
-                if (!$appName -or $appName -eq $specAppName) {
+                if (!$appNames -or $appNames.Contains($specAppName)) {
                     LogUpdate "* UnApplying extra of $specAppName version $appVersion"
                     m_applyExtra $extrasPath $specAppName $( [ApplyType]::CleanUp ) $appVersion
                 }
