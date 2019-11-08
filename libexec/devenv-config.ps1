@@ -1,11 +1,11 @@
 # Usage: devenv config [options]
 # Summary: Devenv configuration Management
 # Help:
-# devenv config add [-name <String>]* [-url <String>]* [-branch <String>] [-force]
-# devenv config remove [-name <String>]* [-force]
-# devenv config update [-name <String>]* [-force]
-# devenv config apply [-name <String>]* [-appName <String>]*
-# devenv config unapply [-name <String>] [-force]* [-appName <String>]*
+# devenv config add -name <String> -url <String> [-branch <String>] [-force]
+# devenv config remove -name <String> [-force]
+# devenv config update -name <String> [-force]
+# devenv config apply -name <String> [-appNames <String>*]
+# devenv config unapply -name <String> [-force] [-appNames <String>*]
 # devenv config list
 
 Param(
