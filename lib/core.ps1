@@ -65,3 +65,16 @@ function UnverifySslGitAction([ScriptBlock]$script){
     git config --global --unset http.sslVerify
     git config --global http.sslVerify $sslVerify
 }
+
+function isAdmin {
+    return ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]"Administrator")
+}
+
+function runElevated([String[]]$params, [ScriptBlock]$command) {
+    If (-NOT(isAdmin)) {
+        $params = "'" + [system.String]::Join("', '", $params) + "'"
+        Start-Process powershell -Verb RunAs -ArgumentList "-noexit -command invoke-command -scriptblock {$command} -argumentlist $params"
+    } else {
+        Invoke-Command -scriptblock $command -argumentlist $params
+    }
+}

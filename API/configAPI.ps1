@@ -24,7 +24,7 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     # install buckets
     foreach ($bucketSpec in $scoopConf.buckets) {
         if ($bucketSpec -ne "" -and !($bucketSpec -like "#*")) {
-            InstallScoopBucket $bucketSpec
+            InstallScoopBucket $bucketSpec $configPath
         }
     }
 
@@ -161,7 +161,7 @@ Function InstallScoopApp([String]$appName, [String]$appBucket, [String]$extrasPa
     }
 }
 
-Function InstallScoopBucket($bucketSpec) {
+Function InstallScoopBucket($bucketSpec, $configPath) {
     if ($bucketSpec -match "^([^@]+)(@(.+))?$") {
         $bucketName = $Matches[1]
         $bucketRepo = $Matches[3]
@@ -169,7 +169,17 @@ Function InstallScoopBucket($bucketSpec) {
         $dir = Find-BucketDirectory $bucketName -Root
         if (Test-Path -LiteralPath $dir) {
             LogMessage "Scoop bucket '$bucketName' is already installed"
-        } else {
+        } elseif ($bucketRepo -eq "local") {
+            if (Test-Path -LiteralPath "$configPath\buckets\$bucketName") {
+                runElevated $configPath,$bucketName,$env:SCOOP {
+                    param([String]$configPath, [String]$bucketName, [String]$scoopDir)
+                    new-item -itemtype symboliclink -value "$configPath\buckets\$bucketName" -name $bucketName -path "$scoopDir\buckets"
+                }
+            } else {
+                LogWarn "No scoop bucket with name $bucketName is present in the configuration"
+            }
+        }
+        else {
             LogUpdate "Add scoop bucket '$bucketSpec'"
             UnverifySslGitAction {
                 scoop bucket add $bucketName $bucketRepo
