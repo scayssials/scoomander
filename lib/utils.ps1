@@ -153,10 +153,10 @@ function devenvUtils_addMenuShortcut([System.IO.FileInfo]$target, $shortcutName,
 }
 
 function devenvUtils_rmMenuShortcut($shortcutName) {
-    $shortcut = "$shortcut_folder\$shortcutName.lnk"
-    write-host "Removing shortcut $( friendly_path $shortcut )"
-    if (Test-Path -Path $shortcut) {
-        Remove-Item $shortcut
+    $shortcut = "$(shortcut_folder)\$shortcutName.lnk"
+    write-host "Removing shortcut $shortcut"
+    if (Test-Path -Path $( friendly_path $shortcut )) {
+        Remove-Item $( friendly_path $shortcut )
     }
 }
 
