@@ -29,9 +29,9 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     }
 
     # update scoop / update all buckets
-    UnverifySslGitAction {
-        scoop update
-    }
+   # DoUnverifiedSslGitAction {
+   #    scoop update
+   # }
 
     # install apps and apply app extras
     $extrasPath = "$configPath\extras"
@@ -49,10 +49,39 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     foreach ($appSpec in $scoopConf.extras) {
         if ($appSpec -ne "" -and !($appSpec -like "#*")) {
             if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $specAppName, $appVersion = $matches['app'], $matches['version']
+                $specAppName, $version = $matches['app'], $matches['version']
                 if (!$appNames -or $appNames.Contains($specAppName)) {
-                    LogUpdate "* Applying extra of $specAppName version $appVersion"
-                    m_applyExtra $extrasPath $specAppName $( [ApplyType]::Idem ) $appVersion
+                    LogUpdate "* Applying extra of $specAppName version $version"
+                    $persist_dir = persistdir $specAppName
+                    # Set current extra version
+                    $current_version = '0.0'
+                    if (Test-Path -LiteralPath "$persist_dir/.version") {
+                        $current_version = Get-Content -Path "$persist_dir/.version"
+                    } else {
+                        New-Item -ItemType File -Path "$persist_dir/.version" -Force > $null
+                        Set-Content "$persist_dir/.version" -Value $current_version
+                    }
+                    #determine apply type
+                    if ($version) {
+                        if ($current_version -eq '0.0') {
+                            LogMessage "Installing $specAppName extras v$version."
+                            Set-Content "$persist_dir/.version" -Value $version
+                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::PostInstall ) $version
+                        }
+                        elseif ($current_version -eq $version) {
+                            LogMessage "The latest version of $specAppName is already installed (v$version)"
+                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::Idem ) $version
+                        } else {
+                            LogUpdate "New $specAppName extras version detected ($current_version -> $version)"
+                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::PreUpdate ) $version $current_version
+                            Set-Content "$persist_dir/.version" -Value $version
+                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::PostUpdate ) $version $current_version
+                        }
+                    } else {
+                        LogMessage "$specAppName extras detected with no version. Installing it as new extra (v0.0)."
+                        Set-Content "$persist_dir/.version" -Value $current_version
+                        m_applyExtra $extrasPath $specAppName $( [ApplyType]::PostInstall ) $version
+                    }
                 }
             }
         }
@@ -79,8 +108,10 @@ Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
             if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $specAppName, $appVersion = $matches['app'], $matches['version']
                 if (!$appNames -or $appNames.Contains($specAppName)) {
+                    $persist_dir = persistdir $specAppName
                     LogUpdate "* UnApplying extra of $specAppName version $appVersion"
                     m_applyExtra $extrasPath $specAppName $( [ApplyType]::CleanUp ) $appVersion
+                    Remove-Item "$persist_dir/.version" -Force -ErrorAction Ignore
                 }
             }
         }
@@ -181,11 +212,10 @@ Function InstallScoopBucket($bucketSpec, $configPath) {
         }
         else {
             LogUpdate "Add scoop bucket '$bucketSpec'"
-            UnverifySslGitAction {
+            DoUnverifiedSslGitAction {
                 scoop bucket add $bucketName $bucketRepo
             }
         }
-        return $bucketName
     }
     else {
         LogWarn "Invalid bucket : $bucketSpec"

@@ -58,7 +58,7 @@ function Invoke-Utility {
 <#
 Invoke a script block without git http.sslVerify
 #>
-function UnverifySslGitAction([ScriptBlock]$script){
+function DoUnverifiedSslGitAction([ScriptBlock]$script){
     $sslVerify = git config --global --get http.sslVerify
     git config --global http.sslVerify false
     & $script
