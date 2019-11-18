@@ -29,9 +29,9 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     }
 
     # update scoop / update all buckets
-   # DoUnverifiedSslGitAction {
-   #    scoop update
-   # }
+    DoUnverifiedSslGitAction {
+       scoop update
+    }
 
     # install apps and apply app extras
     $extrasPath = "$configPath\extras"
