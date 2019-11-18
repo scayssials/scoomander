@@ -73,7 +73,7 @@ function isAdmin {
 function runElevated([String[]]$params, [ScriptBlock]$command) {
     If (-NOT(isAdmin)) {
         $params = "'" + [system.String]::Join("', '", $params) + "'"
-        Start-Process powershell -Verb RunAs -ArgumentList "-noexit -command invoke-command -scriptblock {$command} -argumentlist $params"
+        Start-Process powershell -Verb RunAs -ArgumentList "-command invoke-command -scriptblock {$command} -argumentlist $params" -Wait
     } else {
         Invoke-Command -scriptblock $command -argumentlist $params
     }
