@@ -82,9 +82,8 @@ Switch ($action) {
         # Clone configuration and checkout to the specified branch
         try {
             DoUnverifiedSslGitAction {
-                Invoke-Utility git clone $url "$scoopTarget\persist\devenv\config\$name"
                 Invoke-Utility git lfs install
-                Invoke-Utility git lfs pull
+                Invoke-Utility git clone $url "$scoopTarget\persist\devenv\config\$name"
             }
         }
         catch {
