@@ -18,69 +18,30 @@ enum ApplyType {
 }
 
 Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
-
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
-
+    $extrasPath = "$configPath\extras"
     # install buckets
     foreach ($bucketSpec in $scoopConf.buckets) {
         if ($bucketSpec -ne "" -and !($bucketSpec -like "#*")) {
             InstallScoopBucket $bucketSpec $configPath
         }
     }
-
     # update scoop / update all buckets
     DoUnverifiedSslGitAction {
-       scoop update
+        scoop update
     }
-
-    # install apps and apply app extras
-    $extrasPath = "$configPath\extras"
-    foreach ($appSpec in $scoopConf.apps) {
-        if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $specAppName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                if (!$appNames -or $appNames.Contains($specAppName)) {
-                    InstallScoopApp $specAppName $appBucket $extrasPath
-                }
-            }
-        }
-    }
-    # apply lonely extras
-    foreach ($appSpec in $scoopConf.extras) {
-        if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $specAppName, $version = $matches['app'], $matches['version']
-                if (!$appNames -or $appNames.Contains($specAppName)) {
-                    LogUpdate "* Applying extra of $specAppName version $version"
-                    $persist_dir = persistdir $specAppName
-                    # Set current extra version
-                    $current_version = '0.0'
-                    if (Test-Path -LiteralPath "$persist_dir/.version") {
-                        $current_version = Get-Content -Path "$persist_dir/.version"
+    # install specs
+    foreach ($installSpec in $scoopConf.install) {
+        if ($installSpec -ne "" -and !($installSpec -like "#*")) {
+            if ($installSpec -match '(?<type>[^:]+):(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<name>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
+                $type, $name, $version, $appBucket = $matches['type'], $matches['name'], $matches['version'], $matches['bucket']
+                if (!$appNames -or $appNames.Contains($name)) {
+                    if ($type -eq "extra") {
+                        InstallExtra $name $version $extrasPath
+                    } elseif ($type -eq "app") {
+                        InstallApp $name $version $appBucket $extrasPath
                     } else {
-                        New-Item -ItemType File -Path "$persist_dir/.version" -Force > $null
-                        Set-Content "$persist_dir/.version" -Value $current_version
-                    }
-                    #determine apply type
-                    if ($version) {
-                        if ($current_version -eq '0.0') {
-                            LogMessage "Installing $specAppName extras v$version."
-                            Set-Content "$persist_dir/.version" -Value $version
-                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::PostInstall ) $version
-                        }
-                        elseif ($current_version -eq $version) {
-                            LogMessage "The latest version of $specAppName is already installed (v$version)"
-                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::Idem ) $version
-                        } else {
-                            LogUpdate "New $specAppName extras version detected ($current_version -> $version)"
-                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::PreUpdate ) $version $current_version
-                            Set-Content "$persist_dir/.version" -Value $version
-                            m_applyExtra $extrasPath $specAppName $( [ApplyType]::PostUpdate ) $version $current_version
-                        }
-                    } else {
-                        LogMessage "$specAppName extras detected with no version. Installing it as new extra (v0.0)."
-                        Set-Content "$persist_dir/.version" -Value $current_version
-                        m_applyExtra $extrasPath $specAppName $( [ApplyType]::PostInstall ) $version
+                        LogWarn "$type is not a supported type. ($installSpec)"
                     }
                 }
             }
@@ -91,35 +52,41 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
 Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
-    # uninstall apps and unapply app extras
-    foreach ($appSpec in $scoopConf.apps) {
-        if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            if ($appSpec -match '(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $specAppName, $appVersion, $appBucket = $matches['app'], $matches['version'], $matches['bucket']
-                if (!$appNames -or $appNames.Contains($specAppName)) {
-                    RemoveScoopApp $specAppName $appBucket $extrasPath
-                }
-            }
-        }
-    }
-    # unapply lonely extras
-    foreach ($appSpec in $scoopConf.extras) {
-        if ($appSpec -ne "" -and !($appSpec -like "#*")) {
-            if ($appSpec -match '(?<app>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
-                $specAppName, $appVersion = $matches['app'], $matches['version']
-                if (!$appNames -or $appNames.Contains($specAppName)) {
-                    $persist_dir = persistdir $specAppName
-                    LogUpdate "* UnApplying extra of $specAppName version $appVersion"
-                    m_applyExtra $extrasPath $specAppName $( [ApplyType]::CleanUp ) $appVersion
-                    Remove-Item "$persist_dir/.version" -Force -ErrorAction Ignore
+    # uninstall specs
+    foreach ($installSpec in $scoopConf.install) {
+        if ($installSpec -ne "" -and !($installSpec -like "#*")) {
+            if ($installSpec -match '(?<type>[^:]+):(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<name>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
+                $type, $name, $version, $bucket = $matches['type'], $matches['name'], $matches['version'], $matches['bucket']
+                if (!$appNames -or $appNames.Contains($name)) {
+                    if ($type -eq "extra") {
+                        RemoveExtra $name $version $extrasPath
+                    } elseif ($type -eq "app") {
+                        RemoveApp $name $bucket $extrasPath
+                    } else {
+                        LogWarn "$type is not a supported type. ($installSpec)"
+                    }
                 }
             }
         }
     }
 }
 
-Function RemoveScoopApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
-    LogUpdate "* Unapplying configuration for app '$appSpec'..."
+Function RemoveExtra([String]$name, [String]$version, [String]$extraPath) {
+    if (!$force) {
+        $decision = takeDecision "The extras '$name' will be cleanedUp. Do you want to continue?"
+        if ($decision -ne 0) {
+            LogWarn 'Cancelled'
+            return
+        }
+    }
+    $persist_dir = persistdir $name
+    LogUpdate "* UnApplying extra of $name version $version"
+    m_applyExtra $extrasPath $name $( [ApplyType]::CleanUp ) $version
+    Remove-Item "$persist_dir/.version" -Force -ErrorAction Ignore
+}
+
+Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
+    LogUpdate "* Unapplying configuration for app '$appName'..."
     if (!$appBucket) {
         $appBucket = "main"
     }
@@ -146,14 +113,14 @@ Function RemoveScoopApp([String]$appName, [String]$appBucket, [String]$extrasPat
             }
         }
         m_applyExtra $extrasPath $appName $( [ApplyType]::CleanUp ) $from_version
-        scoop uninstall $appSpec
+        scoop uninstall $appName
     } else {
         LogMessage "'$appName' isn't installed."
     }
 }
 
-Function InstallScoopApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
-    LogUpdate "* Applying configuration for app '$appSpec'"
+Function InstallApp([String]$appName, [String]$version, [String]$appBucket, [String]$extrasPath) {
+    LogUpdate "* $appName $version : Applying App Configuration"
     if (!$appBucket) {
         $appBucket = "main"
     }
@@ -178,17 +145,51 @@ Function InstallScoopApp([String]$appName, [String]$appBucket, [String]$extrasPa
         else {
             LogInfo "New version of '$appName' detected..."
             m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
-            scoop update $appSpec
+            scoop update $appName
             m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
             m_AddConfigName $appName
         }
     }
     else {
-        LogUpdate "Install scoop app '$appSpec'"
-        scoop install $appSpec
+        LogUpdate "Install scoop app '$appName'"
+        scoop install $appName
         $to_version = current_version $appName $false
         m_applyExtra $extrasPath $appName $( [ApplyType]::PostInstall ) $to_version
         m_AddConfigName $appName
+    }
+}
+
+Function InstallExtra([String]$name, [String]$version, [String]$extrasPath) {
+    LogUpdate "* $name $version : Applying Extra"
+    $persist_dir = persistdir $name
+    # Set current extra version
+    $current_version = '0.0'
+    if (Test-Path -LiteralPath "$persist_dir/.version") {
+        $current_version = Get-Content -Path "$persist_dir/.version"
+    } else {
+        New-Item -ItemType File -Path "$persist_dir/.version" -Force > $null
+        Set-Content "$persist_dir/.version" -Value $current_version
+    }
+    #determine apply type
+    if ($version) {
+        if ($current_version -eq '0.0') {
+            LogMessage "Installing $name extras v$version."
+            Set-Content "$persist_dir/.version" -Value $version
+            m_applyExtra $extrasPath $name $( [ApplyType]::PostInstall ) $version
+        }
+        elseif ($current_version -eq $version) {
+            LogMessage "The latest version of $name is already installed (v$version)"
+            m_applyExtra $extrasPath $name $( [ApplyType]::Idem ) $version
+        } else {
+            LogUpdate "New $name extras version detected ($current_version -> $version)"
+            m_applyExtra $extrasPath $name $( [ApplyType]::PreUpdate ) $version $current_version
+            Set-Content "$persist_dir/.version" -Value $version
+            m_applyExtra $extrasPath $name $( [ApplyType]::PostUpdate ) $version $current_version
+        }
+    } else {
+        LogMessage "$name extras detected with no version. Installing it as new extra (v0.0)."
+        Set-Content "$persist_dir/.version" -Value $current_version
+        m_applyExtra $extrasPath $name $( [ApplyType]::PostInstall ) $version
     }
 }
 
