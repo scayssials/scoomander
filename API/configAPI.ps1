@@ -53,6 +53,7 @@ Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
     # uninstall specs
+    [array]::Reverse($scoopConf.install)
     foreach ($installSpec in $scoopConf.install) {
         if ($installSpec -ne "" -and !($installSpec -like "#*")) {
             if ($installSpec -match '(?<type>[^:]+):(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<name>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
