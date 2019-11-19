@@ -131,7 +131,11 @@ Function InstallApp([String]$appName, [String]$version, [String]$appBucket, [Str
         $install = install_info $appName $from_version
         $currentAppBucket = $install.bucket
         $to_version = latest_version $appName $appBucket
-        if ($appConfigName -ne $configName) {
+        if ($appConfigName -eq "main") {
+            LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but directly by scoop. Add it to the current configuration"
+            m_AddConfigName $appName
+        }
+        elseif ($appConfigName -ne $configName) {
             LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
             return
         }
