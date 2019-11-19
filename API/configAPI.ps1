@@ -37,9 +37,9 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
                 $type, $name, $version, $appBucket = $matches['type'], $matches['name'], $matches['version'], $matches['bucket']
                 if (!$appNames -or $appNames.Contains($name)) {
                     if ($type -eq "extra") {
-                        InstallExtra $name $version $extrasPath
+                        InstallExtra $installSpec $name $version $extrasPath
                     } elseif ($type -eq "app") {
-                        InstallApp $name $version $appBucket $extrasPath
+                        InstallApp $installSpec $name $version $appBucket $extrasPath
                     } else {
                         LogWarn "$type is not a supported type. ($installSpec)"
                     }
@@ -120,8 +120,9 @@ Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
     }
 }
 
-Function InstallApp([String]$appName, [String]$version, [String]$appBucket, [String]$extrasPath) {
-    LogUpdate "* $appName $version : Applying App Configuration"
+Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [String]$appBucket, [String]$extrasPath) {
+    write-host -f Cyan "* $appName$( if ($version) { " $version" } )" -NoNewline
+    write-host -f DarkCyan " ($appSpec)"
     if (!$appBucket) {
         $appBucket = "main"
     }
@@ -139,20 +140,33 @@ Function InstallApp([String]$appName, [String]$version, [String]$appBucket, [Str
             LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
             return
         }
-        if ($currentAppBucket -ne $appBucket) {
+        if ($currentAppBucket -and $currentAppBucket -ne $appBucket) {
             LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
             return
         }
-        if ($from_version -eq $to_version) {
-            LogMessage "The latest version of '$appName' ($to_version) is already installed."
-            m_applyExtra $extrasPath $appName $( [ApplyType]::Idem ) $to_version
-        }
-        else {
-            LogInfo "New version of '$appName' detected..."
-            m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
-            scoop update $appName
-            m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
-            m_AddConfigName $appName
+        if ($version) {
+            if ($from_version -eq $version) {
+                LogMessage "Version already installed ($from_version)"
+                m_applyExtra $extrasPath $appName $( [ApplyType]::Idem ) $to_version
+            } else {
+                LogInfo "New version specified. Updating $from_version -> $version ..."
+                m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $version $from_version
+                scoop install $appBucket/$appName@$version
+                m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $version $from_version
+                m_AddConfigName $appName
+            }
+        } else {
+            if ($from_version -eq $to_version) {
+                LogMessage "Latest version installed ($from_version)"
+                m_applyExtra $extrasPath $appName $( [ApplyType]::Idem ) $to_version
+            }
+            else {
+                LogInfo "New version detected. Updating $from_version -> $to_version ..."
+                m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
+                scoop update $appName
+                m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
+                m_AddConfigName $appName
+            }
         }
     }
     else {
@@ -164,8 +178,9 @@ Function InstallApp([String]$appName, [String]$version, [String]$appBucket, [Str
     }
 }
 
-Function InstallExtra([String]$name, [String]$version, [String]$extrasPath) {
-    LogUpdate "* $name $version : Applying Extra"
+Function InstallExtra([String]$extraSpec, [String]$name, [String]$version, [String]$extrasPath) {
+    write-host -f Cyan "* $name$( if ($version) { " $version" } )" -NoNewline
+    write-host -f DarkCyan " ($extraSpec)"
     $persist_dir = persistdir $name
     # Set current extra version
     $current_version = '0.0'
@@ -178,21 +193,21 @@ Function InstallExtra([String]$name, [String]$version, [String]$extrasPath) {
     #determine apply type
     if ($version) {
         if ($current_version -eq '0.0') {
-            LogMessage "Installing $name extras v$version."
+            LogMessage "Installing $name ($version)"
             Set-Content "$persist_dir/.version" -Value $version
             m_applyExtra $extrasPath $name $( [ApplyType]::PostInstall ) $version
         }
         elseif ($current_version -eq $version) {
-            LogMessage "The latest version of $name is already installed (v$version)"
+            LogMessage "Latest version installed ($current_version)"
             m_applyExtra $extrasPath $name $( [ApplyType]::Idem ) $version
         } else {
-            LogUpdate "New $name extras version detected ($current_version -> $version)"
+            LogUpdate "New version detected. Updating $current_version -> $version ..."
             m_applyExtra $extrasPath $name $( [ApplyType]::PreUpdate ) $version $current_version
             Set-Content "$persist_dir/.version" -Value $version
             m_applyExtra $extrasPath $name $( [ApplyType]::PostUpdate ) $version $current_version
         }
     } else {
-        LogMessage "$name extras detected with no version. Installing it as new extra (v0.0)."
+        LogMessage "$name extras detected with no version. Installing it as new extra (v0.0)"
         Set-Content "$persist_dir/.version" -Value $current_version
         m_applyExtra $extrasPath $name $( [ApplyType]::PostInstall ) $version
     }
@@ -208,7 +223,7 @@ Function InstallScoopBucket($bucketSpec, $configPath) {
             LogMessage "Scoop bucket '$bucketName' is already installed"
         } elseif ($bucketRepo -eq "local") {
             if (Test-Path -LiteralPath "$configPath\buckets\$bucketName") {
-                runElevated $configPath,$bucketName,$env:SCOOP {
+                runElevated $configPath, $bucketName, $env:SCOOP {
                     param([String]$configPath, [String]$bucketName, [String]$scoopDir)
                     new-item -itemtype symboliclink -value "$configPath\buckets\$bucketName" -name $bucketName -path "$scoopDir\buckets"
                 }
@@ -263,7 +278,7 @@ function m_applyExtra($extrasPath, $appName, [ApplyType] $type, $version, $old_v
 function m_AddConfigName($appName) {
     $appdir = appdir $appName/current
     $install_json = Get-Content $appdir/install.json -raw -Encoding UTF8 | convertfrom-json -ea stop
-    $install_json | Add-Member -Type NoteProperty -Name 'config' -Value $configName
+    $install_json | Add-Member -Type NoteProperty -Name 'config' -Value $configName -force
     $install_json | ConvertTo-Json | Set-Content $appdir/install.json
 }
 
