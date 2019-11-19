@@ -160,6 +160,15 @@ function devenvUtils_rmMenuShortcut($shortcutName) {
     }
 }
 
+function devenvUtils_addCommand($commandPath, $name) {
+    write-host "Creating shim $name for $commandPath"
+    shim $commandPath $null $name
+}
+
+function devenvUtils_rmCommand($name) {
+    rm_shim $name $(shimdir)
+}
+
 function devenvUtils_decompress([String]$fileName, [String]$extract_to, [String]$extract_dir) {
     # work out extraction method, if applicable
     if (((get_config 7ZIPEXTRACT_USE_EXTERNAL) -and (Test-CommandAvailable 7z)) -or (Test-HelperInstalled -Helper 7zip)) {
