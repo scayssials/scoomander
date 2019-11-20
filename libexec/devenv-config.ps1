@@ -30,6 +30,14 @@ Param(
 # Set global variables
 $scoopTarget = $env:SCOOP
 $configPath = "$PSScriptRoot\..\config\$name"
+Write-Host "-----------------------------------------------"
+Write-Host "-----------------------------------------------"
+Write-Host "---------------STEPHANE------------------------"
+Write-Host "------------------IS--------------------------"
+Write-Host "------------------THE---------------------------"
+Write-Host "-----------------BEST--------------------------"
+Write-Host "-----------------------------------------------"
+
 
 Function EnsureDevenvVersion() {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
