@@ -56,7 +56,9 @@ Function EnsureDevenvVersion() {
             LogInfo "Devenv has been updated acordingly to the configuration."
             LogMessage "Re Invoke with the new devenv version $( $version ):"
             LogMessage ""
-            Invoke-History
+            $lastCommand = (Get-History -count 1)
+            LogMessage "     $lastCommand"
+            Invoke-Expression $lastCommand
             exit
         }
     } else {
