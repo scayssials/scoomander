@@ -30,7 +30,7 @@ this add a warning and list all installed configuration
  #>
 Function EnsureConfigInstalled([String]$configName) {
     if (-Not(IsConfigInstalled $configName)) {
-        LogWarn "The configuration '$configName' do not exist."
+        LogWarn "Configuration '$configName' do not exist."
         devenv config list
         exit 1
     }
@@ -58,7 +58,7 @@ function Invoke-Utility {
 <#
 Invoke a script block without git http.sslVerify
 #>
-function DoUnverifiedSslGitAction([ScriptBlock]$script){
+function DoUnverifiedSslGitAction([ScriptBlock]$script) {
     $sslVerify = git config --global --get http.sslVerify
     git config --global http.sslVerify false
     & $script

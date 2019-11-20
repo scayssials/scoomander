@@ -29,44 +29,72 @@ Param(
 
 # Set global variables
 $scoopTarget = $env:SCOOP
+$configPath = "$PSScriptRoot\..\config\$name"
 
-Function m_apply([String]$configName) {
-    if (!$configName) {
-        LogWarn "name is mandatory."
-        LogMessage ""
-        LogMessage "Usage: devenv config apply <name>"
-        LogMessage ""
-        return
+Function EnsureDevenvVersion() {
+    $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
+    if ($scoopConf.devenv -and $scoopConf.devenv.version) {
+        LogUpdate "Check Devenv version..."
+        $( (Get-Item "$PSScriptRoot\..").Target ) -match '(?<version>[^\\]+$)' > $null
+        $version = [System.Version]::Parse($scoopConf.devenv.version)
+        $version = [System.Version]::Parse("1.04")
+        $current_version = [System.Version]::Parse($matches['version'])
+        LogMessage "Devenv $current_version used"
+        if ($version -lt $current_version) {
+            LogWarn "Current devenv version ($current_version) is higher than configuration devenv version ($version). Aborting..."
+            exit
+        } elseif ($version -gt $current_version) {
+            LogMessage "Updating devenv to $version accordingly to the configuration..."
+            $output = "$env:TEMP\PowerShell_transcript-$((Get-Date).ToFileTime()).txt"
+            write-host $output
+            Start-Transcript -path "$output"
+            scoop install "devenv/devenv@$version"
+            Stop-Transcript > $null
+            if ((Get-Content -path $output) -match $([RegEx]::Escape("Could not install"))) {
+                LogWarn "Error during devenv update"
+                exit
+            }
+            LogInfo "Devenv has been updated acordingly to the configuration."
+            LogMessage "Re Invoke with the new devenv version $( $version ):"
+            LogMessage ""
+            Invoke-History
+            exit
+        }
+    } else {
+        LogWarn "No devenv version specified in the configuration. Aborting..."
+        exit
     }
-    EnsureConfigInstalled $configName
-    #load API
-    . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
-    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "apply" -appNames $appNames
-}
-
-Function m_unapply([String]$configName) {
-    if (!$configName) {
-        LogWarn "name is mandatory."
-        LogMessage ""
-        LogMessage "Usage: devenv config unapply <name>"
-        LogMessage ""
-        return
-    }
-    EnsureConfigInstalled $configName
-    #load API
-    . "$PSScriptRoot\..\API\configAPI.ps1" $configName $force
-    . "$PSScriptRoot\..\config\$configName\main.ps1" -mode "unapply" -appNames $appNames
 }
 
 Switch ($action) {
-    "add" {
-        if (!$name -or !$url) {
-            LogWarn "name and url are mandatory."
+    { @("add", "apply", "unapply", "remove", "update") -contains $_ } {
+        if (!$name) {
+            LogWarn "name is mandatory."
             LogMessage ""
-            LogMessage "Usage: devenv config add [-name <String>] [-url <String>] [-branch <String>] [-force]"
+            LogMessage "Usage: devenv config $_ <name>"
             LogMessage ""
             return
         }
+    }
+    { @("apply", "unapply", "update") -contains $_ } {
+        EnsureConfigInstalled $name
+        # update scoop / update all buckets
+        DoUnverifiedSslGitAction {
+            scoop update
+        }
+        EnsureDevenvVersion
+    }
+    "apply" {
+        . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
+        . "$configPath\main.ps1" -mode "apply" -appNames $appNames
+        ; Break
+    }
+    "unapply" {
+        . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
+        . "$configPath\main.ps1" -mode "unapply" -appNames $appNames
+        ; Break
+    }
+    "add" {
         # Ask for override if the configuration already exist
         if (IsConfigInstalled $name) {
             if (!$force) {
@@ -104,14 +132,6 @@ Switch ($action) {
         ; Break
     }
     "remove" {
-        if (!$name) {
-            LogWarn "name is mandatory."
-            LogMessage ""
-            LogMessage "Usage: devenv config remove [-name <String>] [-force]"
-            LogMessage ""
-            return
-        }
-        EnsureConfigInstalled $name
         if (!$force) {
             $decision = takeDecision "Do you really want to remove the configuration '$name'? Be sure to unapply it before delete it."
             if ($decision -ne 0) {
@@ -122,6 +142,15 @@ Switch ($action) {
         Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
         LogMessage ""
         LogInfo "Configuration '$name' was removed."
+        ; Break
+    }
+    "list" {
+        LogMessage "Installed devenv configurations: "
+        $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
+        foreach ($Folder in $Folders) {
+            $Folder = Split-Path -Path $Folder -Leaf
+            LogMessage " * $Folder"
+        }
         ; Break
     }
     "update" {
@@ -153,23 +182,6 @@ Switch ($action) {
         }
         m_apply $name
         Pop-Location
-        ; Break
-    }
-    "apply" {
-        m_apply $name
-        ; Break
-    }
-    "unapply" {
-        m_unapply $name
-        ; Break
-    }
-    "list" {
-        LogMessage "List all devenv configuration by names: "
-        $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
-        foreach ($Folder in $Folders) {
-            $Folder = Split-Path -Path $Folder -Leaf
-            LogMessage " * $Folder"
-        }
         ; Break
     }
     default {

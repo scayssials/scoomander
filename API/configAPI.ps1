@@ -26,10 +26,6 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
             InstallScoopBucket $bucketSpec $configPath
         }
     }
-    # update scoop / update all buckets
-    DoUnverifiedSslGitAction {
-        scoop update
-    }
     # install specs
     foreach ($installSpec in $scoopConf.install) {
         if ($installSpec -ne "" -and !($installSpec -like "#*")) {
