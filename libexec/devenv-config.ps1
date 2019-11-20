@@ -37,7 +37,6 @@ Function EnsureDevenvVersion() {
         LogUpdate "Check Devenv version..."
         $( (Get-Item "$PSScriptRoot\..").Target ) -match '(?<version>[^\\]+$)' > $null
         $version = [System.Version]::Parse($scoopConf.devenv.version)
-        $version = [System.Version]::Parse("1.04")
         $current_version = [System.Version]::Parse($matches['version'])
         LogMessage "Devenv $current_version used"
         if ($version -lt $current_version) {
