@@ -48,6 +48,19 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
 Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
+    # uninstall local buckets
+    foreach ($bucketSpec in $scoopConf.buckets) {
+        if ($bucketSpec -ne "" -and !($bucketSpec -like "#*")) {
+            if ($bucketSpec -match "^([^@]+)(@(.+))?$") {
+                $bucketName = $Matches[1]
+                $bucketRepo = $Matches[3]
+                if ($bucketRepo -eq "local") {
+                    write-host "unlink_file $env:SCOOP\buckets\$bucketName"
+                    unlink_file "$env:SCOOP\buckets\$bucketName"
+                }
+            }
+        }
+    }
     # uninstall specs
     [array]::Reverse($scoopConf.install)
     foreach ($installSpec in $scoopConf.install) {
@@ -293,4 +306,21 @@ function m_isAppInstalledThroughCurrentConfig($appName) {
         return $true
     }
     return $false
+}
+
+function unlink_file($dir) {
+    $file = Get-Item $dir
+    if ($null -ne $file.LinkType) {
+        $filepath = $file.FullName
+        # directory (junction)
+        if ($file -is [System.IO.DirectoryInfo]) {
+            # remove read-only attribute on the link
+            attrib -R /L $filepath
+            # remove the junction
+            & "$env:COMSPEC" /c "rmdir /s /q `"$filepath`""
+        } else {
+            # remove the hard link
+            & "$env:COMSPEC" /c "del `"$filepath`""
+        }
+    }
 }
