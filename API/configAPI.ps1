@@ -43,12 +43,7 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
             }
         }
     }
-}
-
-Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
-    $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
-    $extrasPath = "$configPath\extras"
-    # uninstall local buckets
+    # uninstall local buckets to clean up scoop
     foreach ($bucketSpec in $scoopConf.buckets) {
         if ($bucketSpec -ne "" -and !($bucketSpec -like "#*")) {
             if ($bucketSpec -match "^([^@]+)(@(.+))?$") {
@@ -61,6 +56,11 @@ Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
             }
         }
     }
+}
+
+Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
+    $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
+    $extrasPath = "$configPath\extras"
     # uninstall specs
     [array]::Reverse($scoopConf.install)
     foreach ($installSpec in $scoopConf.install) {
