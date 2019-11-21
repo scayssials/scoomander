@@ -5,12 +5,12 @@ param($cmd)
 
 $commands = commands
 if ('--version' -contains $cmd -or (!$cmd -and '-v' -contains $args)) {
-    scoop info devenv
+    scoop info scoomander
 }
 elseif (@($null, '--help', '/?') -contains $cmd -or $args[0] -contains '-h') { exec 'help' $args }
 elseif ($commands -contains $cmd) {
     exec $cmd $args
 } else {
-    "devenv: '$cmd' isn't a devenv command. See 'devenv help'."; exit 1
+    "scoomander: '$cmd' isn't a scoomander command. See 'scoomander help'."; exit 1
 }
 

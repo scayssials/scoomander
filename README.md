@@ -12,14 +12,14 @@
 
 - - -
 <p align="center" >
-    <a href="https://github.com/scayssials/devenv">
-        <img src="https://img.shields.io/github/languages/code-size/scayssials/devenv.svg" alt="Code Size" />
+    <a href="https://github.com/scayssials/scoomander">
+        <img src="https://img.shields.io/github/languages/code-size/scayssials/scoomander.svg" alt="Code Size" />
     </a>
-    <a href="https://github.com/scayssials/devenv">
-        <img src="https://img.shields.io/github/repo-size/scayssials/devenv.svg" alt="Repository size" />
+    <a href="https://github.com/scayssials/scoomander">
+        <img src="https://img.shields.io/github/repo-size/scayssials/scoomander.svg" alt="Repository size" />
     </a>
-    <a href="https://github.com/scayssials/devenv/blob/master/LICENSE">
-        <img src="https://img.shields.io/github/license/scayssials/devenv.svg" alt="License" />
+    <a href="https://github.com/scayssials/scoomander/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/scayssials/scoomander.svg" alt="License" />
     </a>    
 </p>
 

@@ -7,9 +7,9 @@ Update an environment variable or create it if necessary
 Environment variable are setted in the current process and in the user
 
 .EXAMPLE
-devenvUtils_UpdateEnvironmentVariable PUTTY_HOME C:/scoop/app/putty/current
+scoomanderUtils_UpdateEnvironmentVariable PUTTY_HOME C:/scoop/app/putty/current
  #>
-function devenvUtils_UpdateEnvironmentVariable([String]$Name, [String]$Value) {
+function scoomanderUtils_UpdateEnvironmentVariable([String]$Name, [String]$Value) {
     $currentValue = [environment]::GetEnvironmentVariable($Name)
     if ($Value) {
         if ($currentValue) {
@@ -41,11 +41,11 @@ Remove an environment variable if it exist with the matched value
 if the value is null, remove the env var
 
 .EXAMPLE
-devenvUtils_RemoveEnvironmentVariable PUTTY_HOME C:/scoop/app/putty/current
+scoomanderUtils_RemoveEnvironmentVariable PUTTY_HOME C:/scoop/app/putty/current
 or
-devenvUtils_RemoveEnvironmentVariable PUTTY_HOME
+scoomanderUtils_RemoveEnvironmentVariable PUTTY_HOME
  #>
-function devenvUtils_RemoveEnvironmentVariable([String]$Name, [String]$Value) {
+function scoomanderUtils_RemoveEnvironmentVariable([String]$Name, [String]$Value) {
     $currentValue = [environment]::GetEnvironmentVariable($Name)
     if ($Value) {
         if ($currentValue) {
@@ -71,21 +71,21 @@ function devenvUtils_RemoveEnvironmentVariable([String]$Name, [String]$Value) {
 }
 
 <#
-Install a devenv plugin
-The plugin can then be called by running devenv <pluginName>
+Install a scoomander plugin
+The plugin can then be called by running scoomander <pluginName>
 
 .EXAMPLE
-devenvUtils_installPlugin setJavaHome C:/...../setJavaHome.ps1
+scoomanderUtils_installPlugin setJavaHome C:/...../setJavaHome.ps1
 
-Then, by calling devenv setJavaHome, the script setJavaHome.ps1 will be called
+Then, by calling scoomander setJavaHome, the script setJavaHome.ps1 will be called
  #>
-function devenvUtils_installPlugin([String]$Name, [String]$ScriptFile) {
+function scoomanderUtils_installPlugin([String]$Name, [String]$ScriptFile) {
     if ($Name) {
         if ($ScriptFile) {
             if (Test-Path -path $ScriptFile) {
-                Copy-Item "$ScriptFile" -Destination "$( scoop prefix devenv )/plugins/devenv-$Name.ps1"
-                LogMessage "$Name plugin added to the devenv."
-                LogMessage "Use it with the command 'devenv $Name'."
+                Copy-Item "$ScriptFile" -Destination "$( scoop prefix scoomander )/plugins/scoomander-$Name.ps1"
+                LogMessage "$Name plugin added to the scoomander."
+                LogMessage "Use it with the command 'scoomander $Name'."
             } else {
                 LogWarn "No plugin script found for '$Name' in '$ScriptFile'."
             }
@@ -101,12 +101,12 @@ function devenvUtils_installPlugin([String]$Name, [String]$ScriptFile) {
 Remove the mentionned plugin
 
 .EXAMPLE
-devenvUtils_removePlugin setJavaHome
+scoomanderUtils_removePlugin setJavaHome
  #>
-function devenvUtils_removePlugin([String]$Name) {
+function scoomanderUtils_removePlugin([String]$Name) {
     if ($Name) {
-        if (Test-Path -path "$( scoop prefix devenv )/plugins/devenv-$Name.ps1") {
-            Remove-Item "$( scoop prefix devenv )/plugins/devenv-$Name.ps1" -Force
+        if (Test-Path -path "$( scoop prefix scoomander )/plugins/scoomander-$Name.ps1") {
+            Remove-Item "$( scoop prefix scoomander )/plugins/scoomander-$Name.ps1" -Force
             LogMessage "$Name plugin removed"
         } else {
             LogWarn "Impossible to remove plugin $Name. No plugin with the name '$Name' found."
@@ -122,7 +122,7 @@ Store the version used to apply extras
 return true if the value has been updated
 Can be used to now if an extra should be applied or not
  #>
-function devenvUtils_updateExtraVersion([String]$persist_dir, [String]$version) {
+function scoomanderUtils_updateExtraVersion([String]$persist_dir, [String]$version) {
     if (Test-Path -LiteralPath "$persist_dir/.version") {
         $currentVersion = Get-Content -Path "$persist_dir/.version"
         if ($currentVersion -eq $version) {
@@ -144,15 +144,15 @@ function devenvUtils_updateExtraVersion([String]$persist_dir, [String]$version) 
 <#
 Remove the stored version
  #>
-function devenvUtils_removeExtraVersion([String]$persist_dir) {
+function scoomanderUtils_removeExtraVersion([String]$persist_dir) {
     Remove-Item "$persist_dir/.version" -Force
 }
 
-function devenvUtils_addMenuShortcut([System.IO.FileInfo]$target, $shortcutName, [System.IO.FileInfo]$icon) {
+function scoomanderUtils_addMenuShortcut([System.IO.FileInfo]$target, $shortcutName, [System.IO.FileInfo]$icon) {
     startmenu_shortcut $target $shortcutName "" $icon
 }
 
-function devenvUtils_rmMenuShortcut($shortcutName) {
+function scoomanderUtils_rmMenuShortcut($shortcutName) {
     $shortcut = "$(shortcut_folder)\$shortcutName.lnk"
     write-host "Removing shortcut $shortcut"
     if (Test-Path -Path $( friendly_path $shortcut )) {
@@ -160,16 +160,16 @@ function devenvUtils_rmMenuShortcut($shortcutName) {
     }
 }
 
-function devenvUtils_addCommand($commandPath, $name) {
+function scoomanderUtils_addCommand($commandPath, $name) {
     write-host "Creating shim $name for $commandPath"
     shim $commandPath $null $name
 }
 
-function devenvUtils_rmCommand($name) {
+function scoomanderUtils_rmCommand($name) {
     rm_shim $name $(shimdir)
 }
 
-function devenvUtils_decompress([String]$fileName, [String]$extract_to, [String]$extract_dir) {
+function scoomanderUtils_decompress([String]$fileName, [String]$extract_to, [String]$extract_dir) {
     # work out extraction method, if applicable
     if (((get_config 7ZIPEXTRACT_USE_EXTERNAL) -and (Test-CommandAvailable 7z)) -or (Test-HelperInstalled -Helper 7zip)) {
         $extract_fn = 'Expand-7zipArchive'

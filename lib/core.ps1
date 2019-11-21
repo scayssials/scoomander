@@ -14,7 +14,7 @@ Function TakeDecision([String]$title) {
 Return the absolute path of a configuration
  #>
 Function GetConfigPath([String]$configName) {
-    return "$scoopTarget\persist\devenv\config\$configName"
+    return "$scoopTarget\persist\scoomander\config\$configName"
 }
 
 <#
@@ -31,7 +31,7 @@ this add a warning and list all installed configuration
 Function EnsureConfigInstalled([String]$configName) {
     if (-Not(IsConfigInstalled $configName)) {
         LogWarn "Configuration '$configName' do not exist."
-        devenv config list
+        scoomander config list
         exit 1
     }
 }

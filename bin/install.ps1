@@ -1,7 +1,7 @@
-$defaultScoopTarget = 'C:\devenv\scoop'
+$defaultScoopTarget = "$env:USERPROFILE\scoop"
 $changeExecutionPolicy = (Get-ExecutionPolicy) -gt 'RemoteSigned' -or (Get-ExecutionPolicy) -eq 'ByPass'
 
-$scoopTarget = Read-Host -Prompt "Where do you want to install your devenv? [$defaultScoopTarget]"
+$scoopTarget = Read-Host -Prompt "Where do you want to install Scoop (Scoomander will be installed inside)? [$defaultScoopTarget]"
 if ( [string]::IsNullOrWhiteSpace($scoopTarget)) {
     $scoopTarget = $defaultScoopTarget
 }
@@ -13,7 +13,7 @@ if ($changeExecutionPolicy) {
     Write-Host "Current user execution policy don't need to be changed (current value is $( Get-ExecutionPolicy ))"
 }
 
-$title = "Do you want to proceed with the Devenv installation ?"
+$title = "Do you want to proceed with the scoomander installation ?"
 $Prompt = "Enter your choice"
 $Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Yes", "&No")
 $Default = 1
@@ -32,13 +32,13 @@ iwr -useb get.scoop.sh | iex
 
 scoop install git
 
-scoop bucket add devenv https://github.com/scayssials/devenv-bucket.git
-scoop install devenv/devenv
+scoop bucket add scoomander https://github.com/scayssials/scoomander-bucket.git
+scoop install scoomander/scoomander
 
 Write-Host ""
-Write-Host -ForegroundColor Green "Scoop bootstrapped and Devenv installed."
+Write-Host -ForegroundColor Green "Scoop bootstrapped and scoomander installed."
 Write-Host "Try "
 Write-Host ""
-Write-Host -ForegroundColor Cyan "     devenv help"
+Write-Host -ForegroundColor Cyan "     scoomander help"
 Write-Host ""
 Write-Host "to get more infos."

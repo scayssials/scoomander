@@ -1,4 +1,4 @@
-# Usage: devenv help <command>
+# Usage: scoomander help <command>
 # Summary: Show help for a command
 param($cmd)
 
@@ -36,15 +36,15 @@ function print_summaries {
 $commands = commands
 
 if (!($cmd)) {
-    "Usage: devenv <command> [<args>]
+    "Usage: scoomander <command> [<args>]
 
 Some useful commands are:"
     print_summaries
-    "Type 'devenv help <command>' to get help for a specific command."
+    "Type 'scoomander help <command>' to get help for a specific command."
 } elseif($commands -contains $cmd) {
     print_help $cmd
 } else {
-    "devenv help: no such command '$cmd'"; exit 1
+    "scoomander help: no such command '$cmd'"; exit 1
 }
 
 exit 0

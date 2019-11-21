@@ -1,12 +1,12 @@
-# Usage: devenv config [options]
-# Summary: Devenv configuration Management
+# Usage: scoomander config [options]
+# Summary: scoomander configuration Management
 # Help:
-# devenv config add -name <String> -url <String> [-branch <String>] [-force]
-# devenv config remove -name <String> [-force]
-# devenv config update -name <String> [-force]
-# devenv config apply -name <String> [-appNames <String>*]
-# devenv config unapply -name <String> [-force] [-appNames <String>*]
-# devenv config list
+# scoomander config add -name <String> -url <String> [-branch <String>] [-force]
+# scoomander config remove -name <String> [-force]
+# scoomander config update -name <String> [-force]
+# scoomander config apply -name <String> [-appNames <String>*]
+# scoomander config unapply -name <String> [-force] [-appNames <String>*]
+# scoomander config list
 
 Param(
     [String]
@@ -31,30 +31,30 @@ Param(
 $scoopTarget = $env:SCOOP
 $configPath = "$PSScriptRoot\..\config\$name"
 
-Function EnsureDevenvVersion() {
+Function EnsurescoomanderVersion() {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
-    if ($scoopConf.devenv -and $scoopConf.devenv.version) {
-        LogUpdate "Check Devenv version..."
+    if ($scoopConf.scoomander -and $scoopConf.scoomander.version) {
+        LogUpdate "Check Scoomander version..."
         $( (Get-Item "$PSScriptRoot\..").Target ) -match '(?<version>[^\\]+$)' > $null
-        $version = [System.Version]::Parse($scoopConf.devenv.version)
+        $version = [System.Version]::Parse($scoopConf.scoomander.version)
         $current_version = [System.Version]::Parse($matches['version'])
-        LogMessage "Devenv $current_version used"
+        LogMessage "Scoomander $current_version used"
         if ($version -lt $current_version) {
-            LogWarn "Current devenv version ($current_version) is higher than configuration devenv version ($version). Aborting..."
+            LogWarn "Current Scoomander version ($current_version) is higher than configuration scoomander version ($version). Aborting..."
             exit
         } elseif ($version -gt $current_version) {
-            LogMessage "Updating devenv to $version accordingly to the configuration..."
+            LogMessage "Updating scoomander to $version accordingly to the configuration..."
             $output = "$env:TEMP\PowerShell_transcript-$((Get-Date).ToFileTime()).txt"
             write-host $output
             Start-Transcript -path "$output"
-            scoop install "devenv/devenv@$version"
+            scoop install "scoomander/scoomander@$version"
             Stop-Transcript > $null
             if ((Get-Content -path $output) -match $([RegEx]::Escape("Could not install"))) {
-                LogWarn "Error during devenv update"
+                LogWarn "Error during scoomander update"
                 exit
             }
-            LogInfo "Devenv has been updated acordingly to the configuration."
-            LogMessage "Re Invoke with the new devenv version $( $version ):"
+            LogInfo "Scoomander has been updated acordingly to the configuration."
+            LogMessage "Re Invoke with the new scoomander version $( $version ):"
             LogMessage ""
             $lastCommand = (Get-History -count 1)
             LogMessage "     $lastCommand"
@@ -62,7 +62,7 @@ Function EnsureDevenvVersion() {
             exit
         }
     } else {
-        LogWarn "No devenv version specified in the configuration. Aborting..."
+        LogWarn "No scoomander version specified in the configuration. Aborting..."
         exit
     }
 }
@@ -72,7 +72,7 @@ Switch ($action) {
         if (!$name) {
             LogWarn "name is mandatory."
             LogMessage ""
-            LogMessage "Usage: devenv config $_ <name>"
+            LogMessage "Usage: scoomander config $_ <name>"
             LogMessage ""
             return
         }
@@ -83,7 +83,7 @@ Switch ($action) {
         DoUnverifiedSslGitAction {
             scoop update
         }
-        EnsureDevenvVersion
+        EnsureScoomanderVersion
     }
     "apply" {
         . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
@@ -105,21 +105,21 @@ Switch ($action) {
                     return
                 }
             }
-            Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+            Remove-Item "$scoopTarget\persist\scoomander\config\$name" -Force -Recurse
             LogInfo "Old configuration '$name' was erased."
         }
         # Clone configuration and checkout to the specified branch
         try {
             DoUnverifiedSslGitAction {
                 Invoke-Utility git lfs install
-                Invoke-Utility git clone $url "$scoopTarget\persist\devenv\config\$name"
+                Invoke-Utility git clone $url "$scoopTarget\persist\scoomander\config\$name"
             }
         }
         catch {
-            LogWarn "Impossible to Clone '$url' to '$scoopTarget\persist\devenv\config\$name'. Check the error message and your git configuration."
+            LogWarn "Impossible to Clone '$url' to '$scoopTarget\persist\scoomander\config\$name'. Check the error message and your git configuration."
             throw
         }
-        Push-Location "$scoopTarget\persist\devenv\config\$name"
+        Push-Location "$scoopTarget\persist\scoomander\config\$name"
         $exist = git rev-parse --verify --quiet $branch
         if (!$exist) { git checkout -b $branch }
         else { git checkout $branch }
@@ -127,7 +127,7 @@ Switch ($action) {
         LogInfo "Configuration '$name' was added."
         LogMessage "You can now use: "
         LogMessage ""
-        LogMessage "     devenv config apply $name"
+        LogMessage "     scoomander config apply $name"
         LogMessage ""
         LogMessage "to install it."
         ; Break
@@ -140,14 +140,14 @@ Switch ($action) {
                 return
             }
         }
-        Remove-Item "$scoopTarget\persist\devenv\config\$name" -Force -Recurse
+        Remove-Item "$scoopTarget\persist\scoomander\config\$name" -Force -Recurse
         LogMessage ""
         LogInfo "Configuration '$name' was removed."
         ; Break
     }
     "list" {
-        LogMessage "Installed devenv configurations: "
-        $Folders = Get-ChildItem "$scoopTarget\persist\devenv\config\" -Directory -Name
+        LogMessage "Installed scoomander configurations: "
+        $Folders = Get-ChildItem "$scoopTarget\persist\scoomander\config\" -Directory -Name
         foreach ($Folder in $Folders) {
             $Folder = Split-Path -Path $Folder -Leaf
             LogMessage " * $Folder"
@@ -158,7 +158,7 @@ Switch ($action) {
         if (!$name) {
             LogWarn "name is mandatory."
             LogMessage ""
-            LogMessage "Usage: devenv config update <name> [-force]"
+            LogMessage "Usage: scoomander config update <name> [-force]"
             LogMessage ""
             return
         }
@@ -167,7 +167,7 @@ Switch ($action) {
         LogInfo "Rebasing configuration..."
         Push-Location $( GetConfigPath $name )
         git add .
-        git commit -a -m "[Devenv Update] Configuration Snapshot"
+        git commit -a -m "[Scoomander Update] Configuration Snapshot"
         git fetch origin
         if ($force) {
             git rebase -Xours origin/master
@@ -186,6 +186,6 @@ Switch ($action) {
         ; Break
     }
     default {
-        Invoke-Expression "$PSScriptRoot\devenv-help.ps1 $cmd"
+        Invoke-Expression "$PSScriptRoot\scoomander-help.ps1 $cmd"
     }
 }
