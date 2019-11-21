@@ -14,7 +14,9 @@ Param(
     [String]
     $name,
     [String[]]
-    $appNames
+    $appNames,
+    [Switch]
+    $force
 )
 
 # Import useful scripts
