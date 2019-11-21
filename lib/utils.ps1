@@ -148,8 +148,8 @@ function scoomanderUtils_removeExtraVersion([String]$persist_dir) {
     Remove-Item "$persist_dir/.version" -Force
 }
 
-function scoomanderUtils_addMenuShortcut([System.IO.FileInfo]$target, $shortcutName, [System.IO.FileInfo]$icon) {
-    startmenu_shortcut $target $shortcutName "" $icon
+function scoomanderUtils_addMenuShortcut([System.IO.FileInfo]$target, $shortcutName, $arguments, [System.IO.FileInfo]$icon) {
+    startmenu_shortcut $target $shortcutName $arguments $icon
 }
 
 function scoomanderUtils_rmMenuShortcut($shortcutName) {
