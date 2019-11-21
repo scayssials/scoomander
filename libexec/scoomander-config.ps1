@@ -82,7 +82,7 @@ Switch ($action) {
         LogInfo "Configuration '$name' was added."
         LogMessage "You can now use: "
         LogMessage ""
-        LogMessage "     scoomander config apply $name"
+        LogMessage "     scoomander apply $name"
         LogMessage ""
         LogMessage "to install it."
         ; Break
