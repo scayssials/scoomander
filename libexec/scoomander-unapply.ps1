@@ -6,6 +6,7 @@
 #
 # Options:
 #   -appnames:  Comma separated app. Will only unapply configuration for those apps
+#   -force:     Do not ask to confirm
 #
 # This will uninstall your configuration apps
 # This will also cleanup all your configurations extras
@@ -14,7 +15,9 @@ Param(
     [String]
     $name,
     [String[]]
-    $appNames
+    $appNames,
+    [Switch]
+    $force
 )
 
 # Import useful scripts
