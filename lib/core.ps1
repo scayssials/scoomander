@@ -1,3 +1,5 @@
+$scoopTarget = $env:SCOOP
+
 . "$PSScriptRoot\logger.ps1"
 
 <#
@@ -76,5 +78,41 @@ function runElevated([String[]]$params, [ScriptBlock]$command) {
         Start-Process powershell -Verb RunAs -ArgumentList "-command invoke-command -scriptblock {$command} -argumentlist $params" -Wait
     } else {
         Invoke-Command -scriptblock $command -argumentlist $params
+    }
+}
+
+Function EnsureScoomanderVersion($configPath) {
+    $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
+    if ($scoopConf.scoomander -and $scoopConf.scoomander.version) {
+        LogUpdate "Check Scoomander version..."
+        $( (Get-Item "$PSScriptRoot\..").Target ) -match '(?<version>[^\\]+$)' > $null
+        $version = [System.Version]::Parse($scoopConf.scoomander.version)
+        $current_version = [System.Version]::Parse($matches['version'])
+        LogMessage "Scoomander $current_version used"
+        if ($version -lt $current_version) {
+            LogWarn "Current Scoomander version ($current_version) is higher than configuration scoomander version ($version). Aborting..."
+            exit
+        } elseif ($version -gt $current_version) {
+            LogMessage "Updating scoomander to $version accordingly to the configuration..."
+            $output = "$env:TEMP\PowerShell_transcript-$((Get-Date).ToFileTime() ).txt"
+            write-host $output
+            Start-Transcript -path "$output"
+            scoop install "scoomander/scoomander@$version"
+            Stop-Transcript > $null
+            if ((Get-Content -path $output) -match $([RegEx]::Escape("Could not install") )) {
+                LogWarn "Error during scoomander update"
+                exit
+            }
+            LogInfo "Scoomander has been updated acordingly to the configuration."
+            LogMessage "Re Invoke with the new scoomander version $( $version ):"
+            LogMessage ""
+            $lastCommand = (Get-History -count 1)
+            LogMessage "     $lastCommand"
+            Invoke-Expression $lastCommand
+            exit
+        }
+    } else {
+        LogWarn "No scoomander version specified in the configuration. Aborting..."
+        exit
     }
 }

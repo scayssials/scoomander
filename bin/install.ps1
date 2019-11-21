@@ -13,7 +13,7 @@ if ($changeExecutionPolicy) {
     Write-Host "Current user execution policy don't need to be changed (current value is $( Get-ExecutionPolicy ))"
 }
 
-$title = "Do you want to proceed with the scoomander installation ?"
+$title = "Do you want to proceed with the Scoomander installation ?"
 $Prompt = "Enter your choice"
 $Choices = [System.Management.Automation.Host.ChoiceDescription[]]@("&Yes", "&No")
 $Default = 1
@@ -36,7 +36,7 @@ scoop bucket add scoomander https://github.com/scayssials/scoomander-bucket.git
 scoop install scoomander/scoomander
 
 Write-Host ""
-Write-Host -ForegroundColor Green "Scoop bootstrapped and scoomander installed."
+Write-Host -ForegroundColor Green "Scoop bootstrapped and Scoomander installed."
 Write-Host "Try "
 Write-Host ""
 Write-Host -ForegroundColor Cyan "     scoomander help"

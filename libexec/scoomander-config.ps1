@@ -1,12 +1,24 @@
-# Usage: scoomander config [options]
-# Summary: scoomander configuration Management
+# Usage: scoomander config add|list|rm [<args>]
+# Summary: Add, list or remove configs.
 # Help:
-# scoomander config add -name <String> -url <String> [-branch <String>] [-force]
-# scoomander config remove -name <String> [-force]
-# scoomander config update -name <String> [-force]
-# scoomander config apply -name <String> [-appNames <String>*]
-# scoomander config unapply -name <String> [-force] [-appNames <String>*]
-# scoomander config list
+# Configurations are repositories of scoomander configurations.
+# Scoomander comes without any configuration
+# Configurations are installed in scoop\persist\scoomander\config
+#
+# To add a configuration:
+#
+#     scoomander config add -name <String> -url <String> [-branch <String>] [-force]
+#     [-branch <String>]: to checkout the configuration in a specific branch. (master is checkouted by default, and a new branch current is created from it)
+#     [-force] : force override of a configuration with the same name
+#
+# To remove a configuration:
+#
+#     scoomander config rm -name <String> [-force]
+#     [-force] : do not ask permission
+#
+# To list all added configurations:
+#
+#     scoomander config list
 
 Param(
     [String]
@@ -18,9 +30,7 @@ Param(
     [String]
     $branch = "current",
     [Switch]
-    $force,
-    [String[]]
-    $appNames
+    $force
 )
 
 # Import useful scripts
@@ -29,71 +39,16 @@ Param(
 
 # Set global variables
 $scoopTarget = $env:SCOOP
-$configPath = "$PSScriptRoot\..\config\$name"
-
-Function EnsurescoomanderVersion() {
-    $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
-    if ($scoopConf.scoomander -and $scoopConf.scoomander.version) {
-        LogUpdate "Check Scoomander version..."
-        $( (Get-Item "$PSScriptRoot\..").Target ) -match '(?<version>[^\\]+$)' > $null
-        $version = [System.Version]::Parse($scoopConf.scoomander.version)
-        $current_version = [System.Version]::Parse($matches['version'])
-        LogMessage "Scoomander $current_version used"
-        if ($version -lt $current_version) {
-            LogWarn "Current Scoomander version ($current_version) is higher than configuration scoomander version ($version). Aborting..."
-            exit
-        } elseif ($version -gt $current_version) {
-            LogMessage "Updating scoomander to $version accordingly to the configuration..."
-            $output = "$env:TEMP\PowerShell_transcript-$((Get-Date).ToFileTime()).txt"
-            write-host $output
-            Start-Transcript -path "$output"
-            scoop install "scoomander/scoomander@$version"
-            Stop-Transcript > $null
-            if ((Get-Content -path $output) -match $([RegEx]::Escape("Could not install"))) {
-                LogWarn "Error during scoomander update"
-                exit
-            }
-            LogInfo "Scoomander has been updated acordingly to the configuration."
-            LogMessage "Re Invoke with the new scoomander version $( $version ):"
-            LogMessage ""
-            $lastCommand = (Get-History -count 1)
-            LogMessage "     $lastCommand"
-            Invoke-Expression $lastCommand
-            exit
-        }
-    } else {
-        LogWarn "No scoomander version specified in the configuration. Aborting..."
-        exit
-    }
-}
 
 Switch ($action) {
-    { @("add", "apply", "unapply", "remove", "update") -contains $_ } {
+    { @("add", "rm") -contains $_ } {
         if (!$name) {
-            LogWarn "name is mandatory."
+            LogWarn "<name> missing"
             LogMessage ""
             LogMessage "Usage: scoomander config $_ <name>"
             LogMessage ""
             return
         }
-    }
-    { @("apply", "unapply", "update") -contains $_ } {
-        EnsureConfigInstalled $name
-        # update scoop / update all buckets
-        DoUnverifiedSslGitAction {
-            scoop update
-        }
-        EnsureScoomanderVersion
-    }
-    "apply" {
-        . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
-        . "$configPath\main.ps1" -mode "apply" -appNames $appNames
-        ; Break
-    }
-    "unapply" {
-        . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
-        . "$configPath\main.ps1" -mode "unapply" -appNames $appNames
-        ; Break
     }
     "add" {
         # Ask for override if the configuration already exist
@@ -132,7 +87,7 @@ Switch ($action) {
         LogMessage "to install it."
         ; Break
     }
-    "remove" {
+    "rm" {
         if (!$force) {
             $decision = takeDecision "Do you really want to remove the configuration '$name'? Be sure to unapply it before delete it."
             if ($decision -ne 0) {
@@ -146,43 +101,12 @@ Switch ($action) {
         ; Break
     }
     "list" {
-        LogMessage "Installed scoomander configurations: "
+        LogMessage "Installed Scoomander configurations: "
         $Folders = Get-ChildItem "$scoopTarget\persist\scoomander\config\" -Directory -Name
         foreach ($Folder in $Folders) {
             $Folder = Split-Path -Path $Folder -Leaf
             LogMessage " * $Folder"
         }
-        ; Break
-    }
-    "update" {
-        if (!$name) {
-            LogWarn "name is mandatory."
-            LogMessage ""
-            LogMessage "Usage: scoomander config update <name> [-force]"
-            LogMessage ""
-            return
-        }
-        EnsureConfigInstalled $name
-        # Rebase
-        LogInfo "Rebasing configuration..."
-        Push-Location $( GetConfigPath $name )
-        git add .
-        git commit -a -m "[Scoomander Update] Configuration Snapshot"
-        git fetch origin
-        if ($force) {
-            git rebase -Xours origin/master
-        }
-        else {
-            git rebase origin/master
-            $decision = takeDecision "Is your configuration rebased ?"
-            if ($decision -ne 0) {
-                LogWarn 'Trying to reset configuration to previous snapshot.'
-                git rebase --abort
-                git reset --hard
-            }
-        }
-        m_apply $name
-        Pop-Location
         ; Break
     }
     default {
