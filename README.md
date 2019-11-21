@@ -1,72 +1,66 @@
-# devenv
+<p align="center">
+<!--<img src="scoop.png" alt="Long live Scoop!"/>-->
+    <h1 align="center">Scoomander</h1>
+</p>
+<p align="center">
+<b><a href="https://github.com/scayssials/scoomander#what-does-scoomander-do">Features</a></b>
+|
+<b><a href="https://github.com/scayssials/scoomander#installation">Installation</a></b>
+|
+<b><a href="https://github.com/scayssials/scoomander/wiki">Documentation</a></b>
+</p>
+
+- - -
+<p align="center" >
+    <a href="https://github.com/scayssials/devenv">
+        <img src="https://img.shields.io/github/languages/code-size/scayssials/devenv.svg" alt="Code Size" />
+    </a>
+    <a href="https://github.com/scayssials/devenv">
+        <img src="https://img.shields.io/github/repo-size/scayssials/devenv.svg" alt="Repository size" />
+    </a>
+    <a href="https://github.com/scayssials/devenv/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/scayssials/devenv.svg" alt="License" />
+    </a>    
+</p>
+
+Scoomander is a scoop orchestrator for Windows.
+
+## What does Scoomander do
+
+Scoomander install a configurable list of programs on your machine thanks to Scoop.
+
+Scoomander allows users to use complex configuration in order to create and maintain a development environment. 
+
+## Requirements
+
+- Windows 7 SP1+ / Windows Server 2008+
+- [PowerShell 5](https://aka.ms/wmf5download) (or later, include [PowerShell Core](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-6)) and [.NET Framework 4.5](https://www.microsoft.com/net/download) (or later)
+- PowerShell must be enabled for your user account e.g. `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 ## Installation
 
-In PowerShell console execute
-```
-iwr -useb 'https://raw.githubusercontent.com/scayssials/devenv/master/bin/install.ps1' | iex
-```
-then
+Run the following command from your PowerShell to install:
+- Scoop to its default location (`C:\Users\<user>\scoop`) or the one specified during installation 
+- Git
+- 7zip
+- Scoomander
 
-```
-devenv config apply [-Name <String>]
-```
+```powershell
+Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/scayssials/scoomander/master/bin/install.ps1')
 
-## Usage
-
-### Add a configuration
-
-```
-devenv config add [-Name <String>] [-url <String>] 
+# or shorter
+iwr -useb 'https://raw.githubusercontent.com/scayssials/scoomander/master/bin/install.ps1' | iex
 ```
 
-### Apply a configuration
+Once installed, run `scoomander help` for instructions.
 
-```
-devenv config apply [-Name <String>]
-```
+The default Scoop setup is configured so all user installed programs Scoop and Scoomander itself live in `C:\Users\<user>\scoop`.
+These settings can be changed through scoop directly (see [scoop wiki](https://github.com/lukesampson/scoop/wiki)).
 
-### UnApply a configuration
+Scoomander configurations are in `C:\Users\<user>\scoop\app\scoomander\current\config`
 
-```
-devenv config unapply [-Name <String>]
-```
+Scoomander plugins are in `C:\Users\<user>\scoop\app\scoomander\current\plugins`
 
-### Update and apply a configuration
-```
-devenv config update [-Name <String>] [--force]*
-```
-The force will erase your own modification
-If you want to keep your modification don't use --force and rebase your configuration by yourself
+## More
 
-### Update your own configuration
-Every configurations are located in ```<devenvDir>/persist/devenv/config```
-All your configuration are coming from git so you can easily update it locally and remotely
-
-configuration example:
-```
-{
-    "buckets": [
-        "devenv@https://github.com/stephanec1/devenv-bucket.git"
-    ],
-    "apps": [
-        "devenv/devenv",
-        "7zip",
-        "git",
-        "devenv/putty",
-        "devenv/yarn"
-    ],
-    "extras": [
-        "axway"
-    ]
-}
-
-```
-this will install a scoop bucket from github
-install the list of apps and apply configurations extras
-
-### Uninstall
-Just run 
-```
-devenv uninstall
-```
+[Scoomander wiki](https://github.com/scayssials/scoomander/wiki)
