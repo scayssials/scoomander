@@ -6,6 +6,7 @@
 #
 # Options:
 #   -appnames:  Comma separated app. Will only apply configuration for those apps
+#   -force:     Do not ask to confirm
 #
 # This will install/update your buckets and apps in their latest specified versions
 # This will also apply all your configurations extras
