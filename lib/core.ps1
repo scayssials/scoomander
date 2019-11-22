@@ -1,6 +1,9 @@
 $scoopTarget = $env:SCOOP
 
 . "$PSScriptRoot\logger.ps1"
+. "$( scoop prefix scoop )\lib\versions.ps1"
+. "$( scoop prefix scoop )\lib\core.ps1"
+. "$( scoop prefix scoop )\lib\install.ps1"
 
 <#
 Ask a yes no question and return the prompted response
@@ -82,6 +85,7 @@ function runElevated([String[]]$params, [ScriptBlock]$command) {
 }
 
 Function EnsureScoomanderVersion($configPath) {
+    cleanupScoomander $current_version
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     if ($scoopConf.scoomander -and $scoopConf.scoomander.version) {
         LogUpdate "Check Scoomander version..."
@@ -102,10 +106,9 @@ Function EnsureScoomanderVersion($configPath) {
                 exit
             }
             LogInfo "Scoomander has been updated acordingly to the configuration."
-            LogMessage "Re Invoke with the new scoomander version $( $version ):"
+            LogMessage "Re Invoke to use the right scoomander version:"
             LogMessage ""
             LogMessage "     $global_command"
-            Invoke-Expression $global_command
             exit
         }
     } else {
@@ -113,6 +116,25 @@ Function EnsureScoomanderVersion($configPath) {
         exit
     }
 }
+
+function cleanupScoomander($current_version) {
+    $versions = versions "scoomander " $global | Where-Object { $_ -ne $current_version -and $_ -ne 'current' }
+    if (!$versions) {
+        return
+    }
+
+    write-host -f yellow "Removing scoomander`:" -nonewline
+    $versions | ForEach-Object {
+        $version = $_
+        write-host " $version" -nonewline
+        $dir = versiondir "scoomander" $version $global
+        # unlink all potential old link before doing recursive Remove-Item
+        unlink_persist_data $dir
+        Remove-Item $dir -ErrorAction Stop -Recurse -Force
+    }
+    write-host ''
+}
+
 
 
 function link_file($source, $target) {
