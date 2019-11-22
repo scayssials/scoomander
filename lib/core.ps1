@@ -82,16 +82,17 @@ function runElevated([String[]]$params, [ScriptBlock]$command) {
 }
 
 Function EnsureScoomanderVersion($configPath) {
-    scoop cleanup "scoomander"
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     if ($scoopConf.scoomander -and $scoopConf.scoomander.version) {
         LogUpdate "Check Scoomander version..."
         $( (Get-Item "$PSScriptRoot\..").Target ) -match '(?<version>[^\\]+$)' > $null
         $version = [System.Version]::Parse($scoopConf.scoomander.version)
         $current_version = [System.Version]::Parse($matches['version'])
-        if ($version -eq $current_version) {
-            LogMessage "Scoomander $current_version used"
-        } else {
+        LogMessage "Scoomander $current_version used"
+        if ($version -lt $current_version) {
+            LogWarn "Current Scoomander version ($current_version) is higher than configuration scoomander version ($version). Aborting..."
+            exit
+        } elseif ($version -gt $current_version) {
             LogMessage "Updating scoomander to $version accordingly to the configuration..."
             $output = "$env:TEMP\PowerShell_transcript-$((Get-Date).ToFileTime() ).txt"
             write-host $output

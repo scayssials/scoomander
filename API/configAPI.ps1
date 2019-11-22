@@ -231,7 +231,7 @@ Function InstallScoopBucket($bucketSpec, $configPath) {
             LogMessage "Scoop bucket '$bucketName' is already installed"
         } elseif ($bucketRepo -eq "local") {
             if (Test-Path -LiteralPath "$configPath\buckets\$bucketName") {
-                LogMessage "Use local Scoop bucket '$bucketSpec'"
+                LogUpdate "Add scoop bucket '$bucketSpec'"
                 link_file "$scoopDir\buckets\$bucketName" "$configPath\buckets\$bucketName"
             } else {
                 LogWarn "No scoop bucket with name $bucketName is present in the configuration"
