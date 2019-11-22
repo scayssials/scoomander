@@ -116,3 +116,35 @@ Function EnsureScoomanderVersion($configPath) {
         exit
     }
 }
+
+
+function link_file($source, $target) {
+    write-host "Linking $source => $target"
+    # create link
+    if (is_directory $target) {
+        # target is a directory, create junction
+        & "$env:COMSPEC" /c "mklink /j `"$source`" `"$target`"" | out-null
+        attrib $source +R /L
+    } else {
+        # target is a file, create hard link
+        & "$env:COMSPEC" /c "mklink /h `"$source`" `"$target`"" | out-null
+    }
+}
+
+function unlink_file($dir) {
+    write-host "Un-Linking $dir"
+    $file = Get-Item $dir
+    if ($null -ne $file.LinkType) {
+        $filepath = $file.FullName
+        # directory (junction)
+        if ($file -is [System.IO.DirectoryInfo]) {
+            # remove read-only attribute on the link
+            attrib -R /L $filepath
+            # remove the junction
+            & "$env:COMSPEC" /c "rmdir /s /q `"$filepath`""
+        } else {
+            # remove the hard link
+            & "$env:COMSPEC" /c "del `"$filepath`""
+        }
+    }
+}

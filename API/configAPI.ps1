@@ -50,7 +50,6 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
                 $bucketName = $Matches[1]
                 $bucketRepo = $Matches[3]
                 if ($bucketRepo -eq "local") {
-                    write-host "unlink_file $env:SCOOP\buckets\$bucketName"
                     unlink_file "$env:SCOOP\buckets\$bucketName"
                 }
             }
@@ -232,10 +231,8 @@ Function InstallScoopBucket($bucketSpec, $configPath) {
             LogMessage "Scoop bucket '$bucketName' is already installed"
         } elseif ($bucketRepo -eq "local") {
             if (Test-Path -LiteralPath "$configPath\buckets\$bucketName") {
-                runElevated $configPath, $bucketName, $env:SCOOP {
-                    param([String]$configPath, [String]$bucketName, [String]$scoopDir)
-                    new-item -itemtype symboliclink -value "$configPath\buckets\$bucketName" -name $bucketName -path "$scoopDir\buckets"
-                }
+                LogUpdate "Add scoop bucket '$bucketSpec'"
+                link_file "$scoopDir\buckets\$bucketName" "$configPath\buckets\$bucketName"
             } else {
                 LogWarn "No scoop bucket with name $bucketName is present in the configuration"
             }
@@ -308,19 +305,3 @@ function m_isAppInstalledThroughCurrentConfig($appName) {
     return $false
 }
 
-function unlink_file($dir) {
-    $file = Get-Item $dir
-    if ($null -ne $file.LinkType) {
-        $filepath = $file.FullName
-        # directory (junction)
-        if ($file -is [System.IO.DirectoryInfo]) {
-            # remove read-only attribute on the link
-            attrib -R /L $filepath
-            # remove the junction
-            & "$env:COMSPEC" /c "rmdir /s /q `"$filepath`""
-        } else {
-            # remove the hard link
-            & "$env:COMSPEC" /c "del `"$filepath`""
-        }
-    }
-}
