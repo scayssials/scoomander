@@ -16,6 +16,8 @@ Param(
     $name,
     [String[]]
     $include,
+    [String[]]
+    $exclude,
     [Switch]
     $force
 )
@@ -43,4 +45,4 @@ DoUnverifiedSslGitAction {
 EnsureScoomanderVersion $configPath
 
 . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
-. "$configPath\main.ps1" -mode "unapply" -include $include
+. "$configPath\main.ps1" -mode "unapply" -include $include -exclude $exclude
