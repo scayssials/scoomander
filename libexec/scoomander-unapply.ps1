@@ -5,7 +5,7 @@
 #      scoomander unapply myConfig
 #
 # Options:
-#   -appnames:  Comma separated app. Will only unapply configuration for those apps
+#   -include:  Comma separated app. Will only unapply configuration for those apps
 #   -force:     Do not ask to confirm
 #
 # This will uninstall your configuration apps
@@ -15,7 +15,7 @@ Param(
     [String]
     $name,
     [String[]]
-    $appNames,
+    $include,
     [Switch]
     $force
 )
@@ -43,4 +43,4 @@ DoUnverifiedSslGitAction {
 EnsureScoomanderVersion $configPath
 
 . "$PSScriptRoot\..\API\configAPI.ps1" $name $force
-. "$configPath\main.ps1" -mode "unapply" -appNames $appNames
+. "$configPath\main.ps1" -mode "unapply" -include $include

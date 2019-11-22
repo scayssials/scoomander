@@ -17,7 +17,7 @@ enum ApplyType {
     Idem
 }
 
-Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
+Function ApplyConfigurationFile([String]$configPath, [string[]]$include) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
     # install buckets
@@ -31,7 +31,7 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
         if ($installSpec -ne "" -and !($installSpec -like "#*")) {
             if ($installSpec -match '(?<type>[^:]+):(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<name>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $type, $name, $version, $appBucket = $matches['type'], $matches['name'], $matches['version'], $matches['bucket']
-                if (!$appNames -or $appNames.Contains($name)) {
+                if (!$include -or $include.Contains($name)) {
                     if ($type -eq "extra") {
                         InstallExtra $installSpec $name $version $extrasPath
                     } elseif ($type -eq "app") {
@@ -57,7 +57,7 @@ Function ApplyConfigurationFile([String]$configPath, [string[]]$appNames) {
     }
 }
 
-Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
+Function UnapplyConfigurationFile([String]$configPath, [string[]]$include) {
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     $extrasPath = "$configPath\extras"
     # uninstall specs
@@ -66,7 +66,7 @@ Function UnapplyConfigurationFile([String]$configPath, [string[]]$appNames) {
         if ($installSpec -ne "" -and !($installSpec -like "#*")) {
             if ($installSpec -match '(?<type>[^:]+):(?:(?<bucket>[a-zA-Z0-9-]+)\/)?(?<name>.*.json$|[a-zA-Z0-9-_.]+)(?:@(?<version>.*))?') {
                 $type, $name, $version, $bucket = $matches['type'], $matches['name'], $matches['version'], $matches['bucket']
-                if (!$appNames -or $appNames.Contains($name)) {
+                if (!$include -or $include.Contains($name)) {
                     if ($type -eq "extra") {
                         RemoveExtra $name $version $extrasPath
                     } elseif ($type -eq "app") {
