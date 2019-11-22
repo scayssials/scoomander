@@ -82,7 +82,6 @@ function runElevated([String[]]$params, [ScriptBlock]$command) {
 }
 
 Function EnsureScoomanderVersion($configPath) {
-    scoop cleanup "scoomander"
     $scoopConf = (Get-Content "$configPath\conf.json") | ConvertFrom-Json
     if ($scoopConf.scoomander -and $scoopConf.scoomander.version) {
         LogUpdate "Check Scoomander version..."
@@ -105,9 +104,8 @@ Function EnsureScoomanderVersion($configPath) {
             LogInfo "Scoomander has been updated acordingly to the configuration."
             LogMessage "Re Invoke with the new scoomander version $( $version ):"
             LogMessage ""
-            $lastCommand = (Get-History -count 1)
-            LogMessage "     $lastCommand"
-            Invoke-Expression $lastCommand
+            LogMessage "     $global_command"
+            Invoke-Expression $global_command
             exit
         }
     } else {

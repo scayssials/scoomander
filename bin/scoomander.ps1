@@ -3,6 +3,7 @@ param($cmd)
 . "$PSScriptRoot\..\lib\commands.ps1"
 . "$PSScriptRoot\..\lib\logger.ps1"
 
+$global_command = "scoomander $cmd $args"
 $commands = commands
 if ('--version' -contains $cmd -or (!$cmd -and '-v' -contains $args)) {
     scoop info scoomander
