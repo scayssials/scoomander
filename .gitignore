@@ -2,3 +2,4 @@ config
 plugins
 install.json
 manifest.json
+.idea
