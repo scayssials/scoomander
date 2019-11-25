@@ -104,10 +104,9 @@ Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
         $from_version = current_version $appName $false
         $install = install_info $appName $from_version
         $currentAppBucket = $install.bucket
-        $to_version = latest_version $appName $appBucket
         if ($appConfigName -ne $configName) {
             LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but by the configuration '$appConfigName'. Nothing will be done on the app."
-            LogMessage "Use the unappy of the right configuration to uninstall it, or directly by running 'scoop uninstall $appName' (this will not cleanup app extras if there is some)"
+            LogMessage "Use the unalpy of the right configuration to uninstall it, or directly by running 'scoop uninstall $appName' (this will not cleanup app extras if there is some)"
             return
         }
         if ($currentAppBucket -ne $appBucket) {
@@ -122,7 +121,9 @@ Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
             }
         }
         m_applyExtra $extrasPath $appName $( [ApplyType]::CleanUp ) $from_version
-        scoop uninstall $appName
+        exec {
+            scoop uninstall $appName
+        } -retry
     } else {
         LogMessage "'$appName' isn't installed."
     }
@@ -159,7 +160,9 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
             } else {
                 LogInfo "New version specified. Updating $from_version -> $version ..."
                 m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $version $from_version
-                scoop install $appBucket/$appName@$version
+                exec {
+                    scoop install $appBucket/$appName@$version
+                } -catchOutput "error" -retry
                 m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $version $from_version
                 m_AddConfigName $appName
             }
@@ -171,7 +174,9 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
             else {
                 LogInfo "New version detected. Updating $from_version -> $to_version ..."
                 m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
-                scoop update $appName
+                exec {
+                    scoop update $appName
+                } -retry
                 m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
                 m_AddConfigName $appName
             }
@@ -179,7 +184,9 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
     }
     else {
         LogUpdate "Install scoop app '$appName'"
-        scoop install $appName
+        exec {
+            scoop install $appName
+        } -retry
         $to_version = current_version $appName $false
         m_applyExtra $extrasPath $appName $( [ApplyType]::PostInstall ) $to_version
         m_AddConfigName $appName
@@ -239,9 +246,11 @@ Function InstallScoopBucket($bucketSpec, $configPath) {
         }
         else {
             LogUpdate "Add scoop bucket '$bucketSpec'"
-            DoUnverifiedSslGitAction {
-                scoop bucket add $bucketName $bucketRepo
-            }
+            exec {
+                DoUnverifiedSslGitAction {
+                    scoop bucket add $bucketName $bucketRepo
+                }
+            } -retry
         }
     }
     else {
