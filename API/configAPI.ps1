@@ -110,7 +110,7 @@ Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
             return
         }
         if ($currentAppBucket -ne $appBucket) {
-            LogWarn "Scoop app '$appName' is from bucket '$( $install_info.bucket )' but declared in bucket '$appBucket' in the configuration"
+            LogWarn "Scoop app '$appName' is from bucket '$( $install.bucket )' but declared in bucket '$appBucket' in the configuration"
             return
         }
         if (!$force) {
