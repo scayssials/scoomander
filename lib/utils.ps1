@@ -190,3 +190,11 @@ function scoomanderUtils_decompress([String]$fileName, [String]$extract_to, [Str
         $extracted++
     }
 }
+
+function scoomanderUtils_linkFile($source, $target) {
+    link_file $source $target
+}
+
+function scoomanderUtils_unlinkFile($dir) {
+    unlink_file $dir
+}
