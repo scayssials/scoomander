@@ -76,8 +76,14 @@ Switch ($action) {
         }
         Push-Location "$scoopTarget\persist\scoomander\config\$name"
         $exist = git rev-parse --verify --quiet $branch
-        if (!$exist) { git checkout -b $branch }
-        else { git checkout $branch }
+        if (!$exist) {
+            LogWarn "Specified branch '$branch' do not exist."
+            git checkout -b "current"
+        }
+        else {
+            git checkout $branch
+            git checkout -b "current"
+        }
         Pop-Location
         LogInfo "Configuration '$name' was added."
         LogMessage "You can now use: "
