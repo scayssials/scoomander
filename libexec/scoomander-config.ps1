@@ -28,7 +28,7 @@ Param(
     [String]
     $url,
     [String]
-    $branch = "current",
+    $branch,
     [Switch]
     $force
 )
@@ -75,9 +75,23 @@ Switch ($action) {
             throw
         }
         Push-Location "$scoopTarget\persist\scoomander\config\$name"
-        $exist = git rev-parse --verify --quiet $branch
+        if ($branch) {
+            $exist = git rev-parse --verify --quiet $branch
+            if (!$exist) {
+                LogWarn "Specified branch '$branch' do not exist."
+            }
+            else {
+                git checkout $branch
+            }
+        } 
+        $currentExist = git rev-parse --verify --quiet "current"
+        if (!$currentExist) {
+            git checkout -b "current"
+        } else {
+            LogWarn "'current' branch already exist." 
+        }
         if (!$exist) {
-            LogWarn "Specified branch '$branch' do not exist."
+            LogWarn "'Current' branch already exist. Stay on '$branch'"
             git checkout -b "current"
         }
         else {
