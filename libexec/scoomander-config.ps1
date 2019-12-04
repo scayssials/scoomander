@@ -83,20 +83,12 @@ Switch ($action) {
             else {
                 git checkout $branch
             }
-        } 
+        }
         $currentExist = git rev-parse --verify --quiet "current"
         if (!$currentExist) {
             git checkout -b "current"
         } else {
-            LogWarn "'current' branch already exist." 
-        }
-        if (!$exist) {
-            LogWarn "'Current' branch already exist. Stay on '$branch'"
-            git checkout -b "current"
-        }
-        else {
-            git checkout $branch
-            git checkout -b "current"
+            LogWarn "'current' branch already exist."
         }
         Pop-Location
         LogInfo "Configuration '$name' was added."
