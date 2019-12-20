@@ -57,9 +57,9 @@ Once installed, run `scoomander help` for instructions.
 The default Scoop setup is configured so all user installed programs Scoop and Scoomander itself live in `C:\Users\<user>\scoop`.
 These settings can be changed through scoop directly (see [scoop wiki](https://github.com/lukesampson/scoop/wiki)).
 
-Scoomander configurations are in `C:\Users\<user>\scoop\app\scoomander\current\config`
+Scoomander configurations are in `C:\Users\<user>\scoop\apps\scoomander\current\config`
 
-Scoomander plugins are in `C:\Users\<user>\scoop\app\scoomander\current\plugins`
+Scoomander plugins are in `C:\Users\<user>\scoop\apps\scoomander\current\plugins`
 
 ## More
 
