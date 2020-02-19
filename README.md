@@ -50,6 +50,12 @@ Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.
 
 # or shorter
 iwr -useb 'https://raw.githubusercontent.com/scayssials/scoomander/master/bin/install.ps1' | iex
+
+# automated installation
+iwr -useb 'https://raw.githubusercontent.com/scayssials/scoomander/master/bin/install-scoomander.ps1' | iex; Install -NoPrompt
+
+# automated installation with custom path
+iwr -useb 'https://raw.githubusercontent.com/scayssials/scoomander/master/bin/install-scoomander.ps1' | iex; Install -NoPrompt -DefaultScoopTarget C:\some-path
 ```
 
 Once installed, run `scoomander help` for instructions.
