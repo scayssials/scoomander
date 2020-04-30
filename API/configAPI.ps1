@@ -175,8 +175,8 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
                 LogInfo "New version detected. Updating $from_version -> $to_version ..."
                 m_applyExtra $extrasPath $appName $( [ApplyType]::PreUpdate ) $to_version $from_version
                 exec {
-                    scoop update $appName
-                } -retry
+                    scoop install $appBucket/$appName@$to_version
+                } -catchOutput "error" -retry
                 m_applyExtra $extrasPath $appName $( [ApplyType]::PostUpdate ) $to_version $from_version
                 m_AddConfigName $appName
             }
