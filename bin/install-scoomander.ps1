@@ -4,7 +4,9 @@ new-module -name Install-Scoomander -scriptblock {
             [String]
             $defaultScoopTarget = "$env:USERPROFILE\scoop",
             [Switch]
-            $noPrompt
+            $noPrompt,
+            [Switch]
+            $RunAsAdmin
         )
 
         $changeExecutionPolicy = (Get-ExecutionPolicy) -gt 'RemoteSigned' -or (Get-ExecutionPolicy) -eq 'ByPass'
@@ -38,7 +40,13 @@ new-module -name Install-Scoomander -scriptblock {
         if ($changeExecutionPolicy) {
             Set-ExecutionPolicy RemoteSigned -scope CurrentUser -Force
         }
-        iwr -useb get.scoop.sh | iex
+        if ($RunAsAdmin) {
+            iwr get.scoop.sh -outfile 'scoop-install.ps1'
+            .\scoop-install.ps1 -RunAsAdmin
+            Remove-Item .\scoop-install.ps1
+        } else {
+            iwr -useb get.scoop.sh | iex
+        }
 
         scoop install git
 

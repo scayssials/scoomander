@@ -58,6 +58,9 @@ iwr -useb 'https://raw.githubusercontent.com/scayssials/scoomander/master/bin/in
 iwr -useb 'https://raw.githubusercontent.com/scayssials/scoomander/master/bin/install-scoomander.ps1' | iex; Install -NoPrompt -DefaultScoopTarget C:\some-path
 ```
 
+Installation under the administrator console has been disabled by default for security considerations.
+If you know what you are doing and want to install as administrator you can add the `-RunAsAdmin` flag on the `Install` command.
+
 Once installed, run `scoomander help` for instructions.
 
 The default Scoop setup is configured so all user installed programs Scoop and Scoomander itself live in `C:\Users\<user>\scoop`.
