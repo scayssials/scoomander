@@ -113,7 +113,7 @@ Function EnsureScoomanderVersion($configPath) {
 
 # taken from scoop versions.ps1
 function cleanupScoomander($current_version) {
-    $versions = versions "scoomander " $global | Where-Object { $_ -ne $current_version -and $_ -ne 'current' }
+    $versions = Get-InstalledVersion "scoomander " $global | Where-Object { $_ -ne $current_version -and $_ -ne 'current' }
     if (!$versions) {
         return
     }

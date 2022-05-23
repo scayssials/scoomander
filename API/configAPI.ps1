@@ -101,7 +101,7 @@ Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
     }
     if (installed $appName) {
         $appConfigName = m_getConfigName $appName
-        $from_version = current_version $appName $false
+        $from_version = Select-CurrentVersion $appName $false
         $install = install_info $appName $from_version
         $currentAppBucket = $install.bucket
         if ($appConfigName -ne $configName) {
@@ -137,10 +137,10 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
     }
     if (installed $appName) {
         $appConfigName = m_getConfigName $appName
-        $from_version = current_version $appName $false
+        $from_version = Select-CurrentVersion $appName $false
         $install = install_info $appName $from_version
         $currentAppBucket = $install.bucket
-        $to_version = latest_version $appName $appBucket
+        $to_version = Get-LatestVersion $appName $appBucket
         if ($appConfigName -eq "main") {
             LogWarn "Scoop app '$( $appName )' wasn't installed by the configuration '$configName' but directly by scoop. Add it to the current configuration"
             m_AddConfigName $appName
@@ -187,7 +187,7 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
         exec {
             scoop install $appName
         } -retry
-        $to_version = current_version $appName $false
+        $to_version = Select-CurrentVersion $appName $false
         m_applyExtra $extrasPath $appName $( [ApplyType]::PostInstall ) $to_version
         m_AddConfigName $appName
     }
