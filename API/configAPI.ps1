@@ -130,11 +130,11 @@ Function RemoveApp([String]$appName, [String]$appBucket, [String]$extrasPath) {
 }
 
 Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [String]$appBucket, [String]$extrasPath) {
-    write-host -f Cyan "* $appName$( if ($version) { " $version" } )" -NoNewline
-    write-host -f DarkCyan " ($appSpec)"
     if (!$appBucket) {
         $appBucket = "main"
     }
+    write-host -f Cyan "* $appBucket/$appName$( if ($version) { " $version" } ) " -NoNewline
+    write-host -f DarkCyan " ($appSpec)"
     if (installed $appName) {
         $appConfigName = m_getConfigName $appName
         $from_version = Select-CurrentVersion $appName $false
@@ -183,10 +183,16 @@ Function InstallApp([String]$appSpec, [String]$appName, [String]$version, [Strin
         }
     }
     else {
-        LogUpdate "Install scoop app '$appName'"
-        exec {
-            scoop install $appName
-        } -retry
+        LogUpdate "Install scoop app '$appBucket/$appName'"
+        if ($version) {
+            exec {
+                scoop install $appBucket/$appName@$version
+                } -retry
+            } else {
+            exec {
+                scoop install $appBucket/$appName
+            } -retry
+        }
         $to_version = Select-CurrentVersion $appName $false
         m_applyExtra $extrasPath $appName $( [ApplyType]::PostInstall ) $to_version
         m_AddConfigName $appName
